@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bitcoin Year-on-Year Snapshot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+    crossorigin="anonymous"
+  />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #38bdf8;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.15), transparent 35%),
+                  radial-gradient(circle at 80% 0%, rgba(79, 70, 229, 0.12), transparent 25%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      border-radius: 16px;
+    }
+
+    .table thead th {
+      color: #cbd5e1;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .table tbody td {
+      color: #e5e7eb;
+      border-color: rgba(255,255,255,0.06);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #67e8f9;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 360px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-transparent border-0 px-3 py-3">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1 text-light">BTC YoY Snapshot</span>
+      <span class="pill" id="currentDateBadge">Loading...</span>
+    </div>
+  </nav>
+
+  <main class="container pb-5">
+    <div class="row g-4 mb-4">
+      <div class="col-lg-8">
+        <div class="card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h2 class="h4 text-light mb-1">Yearly performance on today's date</h2>
+              <p class="muted mb-0">Powered by the provided historical BTC price file.</p>
+            </div>
+            <div class="text-end">
+              <label for="purchaseYear" class="form-label text-light">Select your purchase year</label>
+              <select id="purchaseYear" class="form-select form-select-sm bg-dark text-light border-secondary"></select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle" id="priceTable">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">BTC/USD</th>
+                  <th scope="col">Return vs Genesis</th>
+                  <th scope="col">5-year CAGR</th>
+                  <th scope="col">Return vs Purchase</th>
+                  <th scope="col">CAGR Since Purchase</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 text-light mb-3">Snapshot comparison</h2>
+          <div class="d-flex flex-column gap-3" id="summaryCards"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 text-light mb-1">Price over time</h2>
+          <p class="muted mb-0">Bitcoin on this date each year since genesis block</p>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="priceChart"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const DATA_URL = './btc-historical-price';
+
+    const formatCurrency = (value) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
+
+    const formatPercent = (value) =>
+      (value === null || Number.isNaN(value)) ? '—' : `${(value * 100).toFixed(2)}%`;
+
+    const parseDate = (dateStr) => {
+      const [month, day, year] = dateStr.split('/').map(Number);
+      return { month, day, year, key: `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}` };
+    };
+
+    const loadCsv = async () => {
+      const response = await fetch(DATA_URL);
+      const text = await response.text();
+      return text
+        .trim()
+        .split(/\n+/)
+        .slice(1)
+        .map((line) => {
+          const [date, price] = line.split(',');
+          const parsed = parseDate(date);
+          return { ...parsed, year: parsed.year, date, price: Number(price) };
+        });
+    };
+
+    const getTodayKey = () => {
+      const now = new Date();
+      return `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}`;
+    };
+
+    const buildDatasetForToday = (records, todayKey) => {
+      return records
+        .filter((row) => row.key === todayKey)
+        .sort((a, b) => a.year - b.year);
+    };
+
+    const computeGenesisPrice = (records, genesisYear = 2009) => {
+      return records.find((row) => row.year === genesisYear)?.price ?? null;
+    };
+
+    const buildYearLookup = (records) => {
+      const map = new Map();
+      records.forEach((row) => map.set(row.year, row));
+      return map;
+    };
+
+    const computeFiveYearCagr = (row, lookup) => {
+      const prior = lookup.get(row.year - 5);
+      if (!prior) return null;
+      const years = 5;
+      return Math.pow(row.price / prior.price, 1 / years) - 1;
+    };
+
+    const computePurchaseReturns = (row, purchaseRow) => {
+      if (!purchaseRow || row.year < purchaseRow.year) return { returnVsPurchase: null, cagrSincePurchase: null };
+      const years = row.year - purchaseRow.year || 1;
+      const returnVsPurchase = (row.price - purchaseRow.price) / purchaseRow.price;
+      const cagrSincePurchase = Math.pow(row.price / purchaseRow.price, 1 / years) - 1;
+      return { returnVsPurchase, cagrSincePurchase };
+    };
+
+    const renderTable = (rows, genesisPrice, purchaseRow, lookup) => {
+      const tbody = document.querySelector('#priceTable tbody');
+      tbody.innerHTML = '';
+
+      rows.forEach((row) => {
+        const returnVsGenesis = genesisPrice ? (row.price - genesisPrice) / genesisPrice : null;
+        const fiveYearCagr = computeFiveYearCagr(row, lookup);
+        const { returnVsPurchase, cagrSincePurchase } = computePurchaseReturns(row, purchaseRow);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold">${row.date}</td>
+          <td>${formatCurrency(row.price)}</td>
+          <td>${formatPercent(returnVsGenesis)}</td>
+          <td>${formatPercent(fiveYearCagr)}</td>
+          <td>${formatPercent(returnVsPurchase)}</td>
+          <td>${formatPercent(cagrSincePurchase)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    const renderSummary = (rows, purchaseRow, genesisPrice) => {
+      const container = document.getElementById('summaryCards');
+      container.innerHTML = '';
+
+      const latest = rows[rows.length - 1];
+      const cards = [
+        {
+          title: 'Latest snapshot',
+          value: formatCurrency(latest.price),
+          helper: `${latest.date}`,
+        },
+        {
+          title: 'Return vs Genesis',
+          value: formatPercent(genesisPrice ? (latest.price - genesisPrice) / genesisPrice : null),
+          helper: genesisPrice ? `Since ${rows[0].date}` : 'Genesis price unavailable',
+        },
+        {
+          title: 'Return vs Purchase',
+          value: formatPercent(purchaseRow ? (latest.price - purchaseRow.price) / purchaseRow.price : null),
+          helper: purchaseRow ? `Since ${purchaseRow.date}` : 'Select your purchase year',
+        },
+      ];
+
+      cards.forEach((card) => {
+        const div = document.createElement('div');
+        div.className = 'p-3 border rounded-3 border-secondary-subtle';
+        div.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold text-light">${card.title}</div>
+              <div class="muted small">${card.helper}</div>
+            </div>
+            <div class="fs-4 fw-bold text-info">${card.value}</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    };
+
+    const renderChart = (rows) => {
+      const ctx = document.getElementById('priceChart');
+      const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      gradient.addColorStop(1, 'rgba(56, 189, 248, 0.02)');
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: rows.map((r) => r.year),
+          datasets: [
+            {
+              label: 'BTC/USD',
+              data: rows.map((r) => r.price),
+              tension: 0.25,
+              borderColor: '#38bdf8',
+              backgroundColor: gradient,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 0 })} USD`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: '#cbd5e1' },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+            },
+            y: {
+              ticks: { color: '#cbd5e1' },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+            },
+          },
+        },
+      });
+    };
+
+    const populatePurchaseYears = (rows) => {
+      const select = document.getElementById('purchaseYear');
+      select.innerHTML = '';
+      rows.forEach((row) => {
+        const option = document.createElement('option');
+        option.value = row.year;
+        option.textContent = row.year;
+        select.appendChild(option);
+      });
+      select.value = rows[0]?.year ?? '';
+    };
+
+    const updateCurrentDateBadge = () => {
+      const badge = document.getElementById('currentDateBadge');
+      const today = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric' });
+      badge.textContent = formatter.format(today);
+    };
+
+    const init = async () => {
+      updateCurrentDateBadge();
+      const records = await loadCsv();
+      const todayKey = getTodayKey();
+      const rows = buildDatasetForToday(records, todayKey);
+      const lookup = buildYearLookup(rows);
+      const genesisPrice = computeGenesisPrice(rows);
+
+      if (rows.length === 0) {
+        document.querySelector('#priceTable tbody').innerHTML = '<tr><td colspan="6" class="text-center text-muted">No data for today\'s date.</td></tr>';
+        return;
+      }
+
+      populatePurchaseYears(rows);
+      const select = document.getElementById('purchaseYear');
+      const setPurchaseYear = () => {
+        const purchaseYear = Number(select.value);
+        const purchaseRow = lookup.get(purchaseYear);
+        renderTable(rows, genesisPrice, purchaseRow, lookup);
+        renderSummary(rows, purchaseRow, genesisPrice);
+      };
+      select.addEventListener('change', setPurchaseYear);
+      setPurchaseYear();
+      renderChart(rows);
+    };
+
+    init();
+  </script>
+</body>
+</html>
