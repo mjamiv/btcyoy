@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bitcoin Yearly on Year</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div>
+        <p class="eyebrow">BTC yearly snapshot</p>
+        <h1>Bitcoin price on this date each year</h1>
+        <p class="lede">Explore how Bitcoin has performed on today's date since the genesis block. Compare returns against the genesis price or the year you first bought in.</p>
+      </div>
+      <div class="card settings">
+        <h2>Customize your comparison</h2>
+        <label for="purchaseYear">Select your purchase year</label>
+        <select id="purchaseYear"></select>
+        <p class="hint">If a price for your selected year is unavailable for today's date, comparisons will be marked as N/A.</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Table view</p>
+          <h2>Performance snapshot</h2>
+        </div>
+        <div class="meta" id="asOf"></div>
+      </div>
+      <div class="table-wrapper">
+        <table id="priceTable">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Date Used</th>
+              <th>BTC/USD</th>
+              <th>% Return vs Genesis</th>
+              <th>% Return vs Purchase Year</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Chart view</p>
+          <h2>Price over time</h2>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <canvas id="priceChart" height="120"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data sourced from <code>btc-historical-price</code>. Values represent closing BTC/USD prices for today's month and day in each year.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
