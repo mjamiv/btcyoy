@@ -6,6 +6,8 @@ the provided `btc-historical-price` CSV file in the repository root.
 Open `index.html` in your browser (no build step required). Everything is bundled via CDN, and the page reads data from the local
 `btc-historical-price` file.
 
+https://mjamiv.github.io/btcyoy/
+
 ## Features
 - Table with the date, BTC/USD price, percent return versus the genesis block price, 5-year CAGR, and returns versus a custom purchase year.
 - Line chart showing BTC/USD across years for today's month and day.
