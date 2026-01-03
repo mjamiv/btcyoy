@@ -270,6 +270,16 @@
         function populateYearDropdown() {
             const select = document.getElementById('purchaseYear');
             const monthData = monthlyHistoricalData[currentMonth];
+            const previousValue = select.value;
+
+            // Reset options to avoid duplicates when new data (e.g., a new year) is added
+            select.innerHTML = '<option value="">select year</option>';
+
+            const years = Object.keys(monthData)
+                .map(year => parseInt(year, 10))
+                .sort((a, b) => a - b);
+
+            years.forEach(year => {
             
             for (let year = 2010; year <= currentYear; year++) {
                 if (monthData[year] !== undefined && monthData[year] !== null && monthData[year] > 0) {
@@ -278,6 +288,10 @@
                     option.textContent = year;
                     select.appendChild(option);
                 }
+            });
+
+            if (previousValue && select.querySelector(`option[value="${previousValue}"]`)) {
+                select.value = previousValue;
             }
         }
 
@@ -310,6 +324,7 @@
                 
                 monthlyHistoricalData[currentMonth][currentYear] = currentPrice;
                 
+                populateYearDropdown();
                 updateTable();
                 updateChart();
                 
@@ -319,6 +334,7 @@
                 
                 currentPrice = 97000;
                 monthlyHistoricalData[currentMonth][currentYear] = currentPrice;
+                populateYearDropdown();
                 updateTable();
                 updateChart();
             }
