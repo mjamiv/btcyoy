@@ -8,6 +8,7 @@ An interactive, single-page view of Bitcoin's price on today's date for every ye
    python -m http.server 8000
    ```
 2. Visit http://localhost:8000 in your browser to load the dashboard.
+access app at: https://mjamiv.github.io/btcyoy/
 
 ## Features
 - Table with the date, BTC/USD price, and percent return versus the genesis block price.

@@ -280,6 +280,8 @@
                 .sort((a, b) => a - b);
 
             years.forEach(year => {
+            
+            for (let year = 2010; year <= currentYear; year++) {
                 if (monthData[year] !== undefined && monthData[year] !== null && monthData[year] > 0) {
                     const option = document.createElement('option');
                     option.value = year;
