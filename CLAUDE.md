@@ -56,32 +56,35 @@ All HTML, CSS, and JavaScript are contained in `index.html`. The application:
 ```
 
 ### Block-Chart Alignment System
-- **CSS Grid Layout**: Blockchain blocks use `display: grid` with dynamically calculated columns
+- **Absolute Positioning**: Blockchain blocks use `position: absolute` for pixel-perfect alignment
 - **Chart.js API Integration**: Uses `chart.scales.x.getPixelForValue(index)` to get exact pixel positions
-- **Grid Column Generation**: Calculates column widths based on spacing between chart plot points
+- **Centering**: Each block centered at its data point using `translateX(-50%)`
+- **Connecting Lines**: Gold-colored lines connect consecutive blocks, positioned from right edge to left edge
 - **Responsive Handling**:
   - Window resize listener (150ms debounce) recalculates alignment
   - Chart.js `onResize` callback triggers realignment
-  - Blocks automatically adjust to maintain chart synchronization
+  - Blocks and connectors automatically adjust to maintain chart synchronization
 
 ### Initialization Flow
 1. `init()` → Hide historical sections (`hideHistoricalSections()`)
 2. `loadData(true)` → Load and process data without rendering (skipRender flag)
-3. `fetchCurrentPrice()` → Get live BTC price in background
+3. `fetchCurrentPrice()` → Get live BTC price, add current year (2026) to dataset via `addCurrentYearToData()`
 4. `setupChartResizeHandler()` → Attach resize event listeners
 5. User interacts with calculator → `calculateReturns()` triggered
 6. `showHistoricalSections()` → Reveal chart, blocks, table
-7. `renderChart()` / `renderTimelineCards()` / `renderTable()` → Render views
-8. `alignBlocksWithChart()` → Position blocks above chart (called after 100ms delay)
+7. `renderChart()` / `renderTimelineCards()` / `renderTable()` → Render views with current year included
+8. `alignBlocksWithChart()` → Position blocks and create connecting lines (called after 100ms delay)
 
 ### Data Flow
 - `parseCSV()` → Parse CSV into `{dateStr: price}` object
 - `filterTodayData()` → Extract entries matching current month/day from all years
-- `calculateMetrics()` → Compute returns, CAGR for each year
+- `fetchCurrentPrice()` → Get live BTC price from CoinGecko API
+- `addCurrentYearToData()` → Add current year (2026) with live price to dataset
+- `calculateMetrics()` → Compute returns, CAGR for each year (including current year)
 - `renderChart()` → Create Chart.js instance with logarithmic y-axis
-- `renderTimelineCards()` → Generate blockchain blocks in chronological order
-- `alignBlocksWithChart()` → Calculate and apply CSS Grid columns for alignment
-- `renderTable()` → Display data table with optional purchase comparison
+- `renderTimelineCards()` → Generate blockchain blocks in chronological order with current year highlighted
+- `alignBlocksWithChart()` → Position blocks using absolute positioning and create connector lines
+- `renderTable()` → Display data table with optional purchase comparison, current year at top
 
 ### Key Functions
 - **Date matching**: Uses `MM/DD/YYYY` format; filters by matching `todayMonth` and `todayDay`
@@ -93,27 +96,46 @@ All HTML, CSS, and JavaScript are contained in `index.html`. The application:
   - Shows current value and total return percentage
 - **Block alignment**:
   - Queries Chart.js internal API for x-axis pixel positions
-  - Generates CSS Grid template matching chart spacing
-  - Assigns each block to corresponding grid column
+  - Uses absolute positioning with `left` and `translateX(-50%)` for centering
+  - Dynamically creates connector lines between consecutive blocks
+  - Connector lines positioned from right edge of one block to left edge of next
 - **Section visibility**: `hideHistoricalSections()` / `showHistoricalSections()` control wrapper visibility
 - **Fallback data**: If `btc-historical-price` file unavailable, uses embedded `sampleHistoricalData`
+- **Number formatting**:
+  - `formatCurrency()` → Standard format with 2 decimals for calculator results
+  - `formatCurrencyTable()` → Whole numbers for table display ($91,267)
+  - `formatPercent()` → Standard format with 2 decimals for calculator
+  - `formatPercentTable()` → Whole numbers for table display (+304%)
+- **Current year integration**:
+  - Live price fetched from CoinGecko API
+  - Current year (2026) automatically added to all visualizations
+  - Special highlighting: 🔴 indicator in blocks, orange background in table
+  - Pulse animation effect on current year blockchain card
 
 ### Blockchain Block Design
 Each block displays minimal, legible information:
-- **Year**: Large, gold-colored text (text-lg)
-- **Price**: White, semibold text (text-base)
-- **Change**: Simple arrow (↑/↓) with percentage (text-xs)
+- **Year**: Medium, gold-colored text (text-sm), current year shows 🔴 indicator
+- **Price**: Small, white text (text-xs), formatted as whole numbers ($91,267)
+- **Change**: Tiny arrow (↑/↓) with percentage (0.6rem), whole numbers (↑15%)
 
 **Styling:**
-- Max width: 120px (desktop), 100px (tablet), 80px (mobile)
-- Padding: p-3 for compact layout
+- Width: 90px (desktop), 75px (tablet), 60px (mobile)
+- Padding: p-2 for compact layout
 - Glass-morphism effect with hover animations
 - Background tint: green for price increases, red for decreases
+- Current year: pulse animation with special `current-year` class
+- Absolute positioning centered at exact chart data points
+
+**Connecting Lines:**
+- 3px solid gold lines between consecutive blocks
+- Lines connect from right edge of one block to left edge of next
+- Positioned at 50% height of blocks
+- z-index: 0 (behind blocks)
 
 **Responsive Behavior:**
 - Blocks shrink proportionally on smaller screens
-- Font sizes adjust for mobile (0.85rem)
-- Grid columns recalculate on window resize
+- Font sizes adjust for mobile (0.75rem)
+- Position and connectors recalculate on window resize
 
 ## Data File
 
