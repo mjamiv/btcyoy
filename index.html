@@ -23,46 +23,44 @@
         }
         .positive { color: #22c55e; }
         .negative { color: #ef4444; }
-        .timeline-container {
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: #f7931a #1a1a2e;
+
+        /* Grid-based blocks overlay for chart alignment */
+        .blocks-overlay {
+            display: grid;
+            width: 100%;
+            margin-bottom: 1rem;
+            position: relative;
+            min-height: 200px;
+            gap: 8px;
         }
-        .timeline-container::-webkit-scrollbar {
-            height: 8px;
-        }
-        .timeline-container::-webkit-scrollbar-track {
-            background: #1a1a2e;
-            border-radius: 10px;
-        }
-        .timeline-container::-webkit-scrollbar-thumb {
-            background: #f7931a;
-            border-radius: 10px;
-        }
-        .timeline-card {
-            min-width: 220px;
+
+        /* Aligned block styling */
+        .aligned-block {
+            min-width: 0;
+            max-width: 220px;
+            width: 100%;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
+            justify-self: center;
         }
-        .timeline-card:hover {
+
+        .aligned-block:hover {
             transform: translateY(-8px) scale(1.05);
             box-shadow: 0 20px 40px rgba(247, 147, 26, 0.3);
             z-index: 10;
         }
-        .timeline-card::after {
-            content: '';
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 3px;
-            background: linear-gradient(90deg, #f7931a 0%, rgba(247, 147, 26, 0.3) 100%);
-            z-index: -1;
+
+        /* Responsive block sizing */
+        @media (max-width: 1024px) {
+            .aligned-block {
+                max-width: 180px;
+            }
         }
-        .timeline-card:last-child::after {
-            display: none;
+
+        @media (max-width: 768px) {
+            .aligned-block {
+                max-width: 140px;
+            }
         }
         .block-hash {
             font-family: 'Courier New', monospace;
@@ -71,15 +69,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-        .chain-link {
-            position: absolute;
-            right: -24px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 24px;
-            height: 24px;
-            z-index: 5;
         }
         .current-year {
             background: linear-gradient(135deg, rgba(247, 147, 26, 0.3) 0%, rgba(255, 171, 64, 0.3) 100%);
@@ -120,31 +109,7 @@
             <p id="currentDate" class="text-xl mt-2 gold-text font-semibold"></p>
         </header>
 
-        <!-- Bitcoin Price Timeline -->
-        <div class="glass-card rounded-xl p-6 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold flex items-center gap-2">
-                    <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                    </svg>
-                    Bitcoin Blockchain - <span id="timelineDate" class="gold-text"></span>
-                </h2>
-                <div class="text-right">
-                    <p class="text-gray-400 text-xs">Today's Price</p>
-                    <div id="livePrice" class="text-2xl font-bold gold-text">Loading...</div>
-                </div>
-            </div>
-            <div class="timeline-container pb-4" id="timelineContainer">
-                <div class="flex gap-4" id="timelineCards">
-                    <div class="timeline-card glass-card rounded-lg p-4 text-center">
-                        <p class="text-gray-400 text-sm">Loading...</p>
-                    </div>
-                </div>
-            </div>
-            <p id="priceSource" class="text-gray-500 text-xs text-center mt-2"></p>
-        </div>
-
-        <!-- Purchase Year Selector -->
+        <!-- Investment Calculator -->
         <div class="glass-card rounded-xl p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,8 +149,30 @@
             </div>
         </div>
 
-        <!-- Chart Section -->
-        <div class="glass-card rounded-xl p-6 mb-8">
+        <!-- Historical Data (Hidden until calculator submission) -->
+        <div id="chartWithBlocksWrapper" class="hidden">
+            <!-- Bitcoin Blockchain Blocks -->
+            <div class="glass-card rounded-xl p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                        Bitcoin Blockchain - <span id="timelineDate" class="gold-text"></span>
+                    </h2>
+                    <div class="text-right">
+                        <p class="text-gray-400 text-xs">Today's Price</p>
+                        <div id="livePrice" class="text-2xl font-bold gold-text">Loading...</div>
+                    </div>
+                </div>
+                <div id="blocksOverlay" class="blocks-overlay">
+                    <!-- Blocks will be dynamically generated and positioned here -->
+                </div>
+                <p id="priceSource" class="text-gray-500 text-xs text-center mt-2"></p>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass-card rounded-xl p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
@@ -196,9 +183,11 @@
                 <canvas id="priceChart"></canvas>
             </div>
         </div>
+        </div>
+        <!-- End of chartWithBlocksWrapper -->
 
         <!-- Data Table -->
-        <div class="glass-card rounded-xl p-6">
+        <div id="tableSection" class="glass-card rounded-xl p-6 hidden">
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -270,6 +259,7 @@
         let purchaseYearPrice = null;
         let chart = null;
         let currentPrice = null;
+        let resizeTimeout = null;
 
         // Get today's month and day
         const today = new Date();
@@ -470,6 +460,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onResize: (chart, size) => {
+                        setTimeout(() => alignBlocksWithChart(), 50);
+                    },
                     plugins: {
                         legend: {
                             display: false
@@ -537,42 +530,19 @@
             return Math.floor(yearsSinceGenesis * blocksPerYear);
         }
 
-        // Render timeline cards
+        // Render timeline blocks aligned with chart
         function renderTimelineCards(data) {
-            const container = document.getElementById('timelineCards');
+            const container = document.getElementById('blocksOverlay');
+            if (!container) return;
+
             if (data.length === 0) {
-                container.innerHTML = '<div class="timeline-card glass-card rounded-lg p-4 text-center"><p class="text-gray-400 text-sm">No data available</p></div>';
+                container.innerHTML = '<div class="aligned-block glass-card rounded-lg p-4 text-center"><p class="text-gray-400 text-sm">No data available</p></div>';
                 return;
             }
 
-            // Reverse data to show newest first (2025 -> earlier years)
-            const reversedData = [...data].reverse();
-
-            // Create 2026 card (current year with live price)
-            const currentYearCard = `
-                <div class="timeline-card glass-card rounded-lg p-5 current-year" style="position: relative;">
-                    <div style="position: absolute; top: -8px; right: -8px; background: #f7931a; color: black; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 12px;">LIVE NOW</div>
-
-                    <!-- Block height -->
-                    <div class="block-height mb-1">Block ${calculateBlockHeight(todayYear).toLocaleString()}</div>
-
-                    <!-- Block header -->
-                    <div class="block-hash mb-2" title="Block ${todayYear}">#${generateBlockHash(todayYear, currentPrice || 0)}</div>
-
-                    <div class="text-3xl font-bold gold-text mb-1">${todayYear}</div>
-                    <div class="text-2xl font-bold text-white mb-2">${currentPrice ? formatCurrency(currentPrice) : 'Loading...'}</div>
-                    <div class="text-xs text-gray-400 mt-2">Today's Price - ${monthNames[todayMonth - 1]} ${todayDay}</div>
-
-                    <!-- Chain link connector -->
-                    <svg class="chain-link" viewBox="0 0 24 24" fill="none" stroke="#f7931a" stroke-width="2">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg>
-                </div>
-            `;
-
-            const historicalCards = reversedData.map((item, index) => {
-                const prevItem = index === 0 ? { price: currentPrice || reversedData[0].price } : reversedData[index - 1];
+            // Render blocks in chronological order (matching chart x-axis)
+            const blocks = data.map((item, index) => {
+                const prevItem = index > 0 ? data[index - 1] : null;
                 let changePercent = null;
                 let changeClass = '';
                 let trendClass = '';
@@ -587,7 +557,7 @@
                 const blockHeight = calculateBlockHeight(item.year);
 
                 return `
-                    <div class="timeline-card glass-card rounded-lg p-5 ${trendClass}" style="position: relative;">
+                    <div class="aligned-block glass-card rounded-lg p-4 ${trendClass}">
                         <!-- Block height -->
                         <div class="block-height mb-1">Block ${blockHeight.toLocaleString()}</div>
 
@@ -603,26 +573,77 @@
                                 </svg>
                                 <span class="text-sm font-semibold">${formatPercent(changePercent, false)}</span>
                             </div>
-                        ` : '<div class="text-xs text-gray-500">Genesis block</div>'}
+                        ` : '<div class="text-xs text-gray-500">Genesis</div>'}
                         ${item.returnSinceGenesis ? `<div class="text-xs text-gray-400 mt-2">+${formatPercent(item.returnSinceGenesis, false)} total</div>` : ''}
-
-                        <!-- Chain link connector -->
-                        ${index < reversedData.length - 1 ? `
-                            <svg class="chain-link" viewBox="0 0 24 24" fill="none" stroke="#f7931a" stroke-width="2">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                            </svg>
-                        ` : ''}
                     </div>
                 `;
             }).join('');
 
-            container.innerHTML = currentYearCard + historicalCards;
+            container.innerHTML = blocks;
+        }
 
-            // Auto-scroll to show the current year (first card)
-            setTimeout(() => {
-                container.scrollTo({ left: 0, behavior: 'smooth' });
-            }, 100);
+        // Align blockchain blocks with chart plot points
+        function alignBlocksWithChart() {
+            if (!chart || !todayData || todayData.length === 0) return;
+
+            const xScale = chart.scales.x;
+            if (!xScale) return;
+
+            const chartCanvas = document.getElementById('priceChart');
+            if (!chartCanvas) return;
+
+            const chartArea = chart.chartArea;
+            if (!chartArea) return;
+
+            // Calculate exact pixel position for each data point
+            const blockPositions = [];
+            for (let i = 0; i < todayData.length; i++) {
+                const pixelX = xScale.getPixelForValue(i);
+                blockPositions.push(pixelX);
+            }
+
+            // Create CSS Grid columns based on chart positions
+            const gridColumns = [];
+            let prevPosition = chartArea.left;
+
+            for (let i = 0; i < blockPositions.length; i++) {
+                const position = blockPositions[i];
+                const columnWidth = position - prevPosition;
+                gridColumns.push(`${columnWidth}px`);
+                prevPosition = position;
+            }
+
+            // Add remaining space
+            const remaining = chartArea.right - prevPosition;
+            if (remaining > 0) {
+                gridColumns.push(`${remaining}px`);
+            }
+
+            // Apply grid template to blocks container
+            const blocksContainer = document.getElementById('blocksOverlay');
+            if (blocksContainer) {
+                blocksContainer.style.gridTemplateColumns = gridColumns.join(' ');
+
+                // Position each block in its grid column
+                const blockElements = blocksContainer.querySelectorAll('.aligned-block');
+                blockElements.forEach((block, index) => {
+                    block.style.gridColumn = index + 1;
+                });
+            }
+        }
+
+        // Setup window resize handler for maintaining block-chart alignment
+        function setupChartResizeHandler() {
+            window.addEventListener('resize', () => {
+                if (resizeTimeout) {
+                    clearTimeout(resizeTimeout);
+                }
+                resizeTimeout = setTimeout(() => {
+                    if (chart) {
+                        alignBlocksWithChart();
+                    }
+                }, 150);
+            });
         }
 
         // Fetch current BTC price
@@ -633,11 +654,6 @@
                 currentPrice = data.bitcoin.usd;
                 document.getElementById('livePrice').textContent = formatCurrency(currentPrice);
                 document.getElementById('priceSource').textContent = 'Live price from CoinGecko';
-
-                // Re-render timeline to update 2026 card with live price
-                if (todayData.length > 0) {
-                    renderTimelineCards(todayData);
-                }
 
                 return currentPrice;
             } catch (error) {
@@ -676,22 +692,60 @@
             const currentValue = btcAmount * latestPrice;
             const totalReturn = ((currentValue - investmentAmount) / investmentAmount) * 100;
 
-            document.getElementById('purchasePrice').textContent = formatCurrency(purchasePrice);
-            document.getElementById('purchaseDateDisplay').textContent = purchaseDateStr;
-            document.getElementById('currentValue').textContent = formatCurrency(currentValue);
+            // Display in new format: "On [date] I invested [$X] to purchase [Y] BTC"
+            const resultsPanel = document.getElementById('resultsPanel');
+            resultsPanel.innerHTML = `
+                <div class="bg-gray-800/50 rounded-lg p-6 text-center">
+                    <p class="text-xl mb-4 leading-relaxed">
+                        On <span class="gold-text font-bold">${purchaseDateStr}</span>
+                        I invested <span class="gold-text font-bold">${formatCurrency(investmentAmount)}</span>
+                        to purchase <span class="gold-text font-bold">${btcAmount.toFixed(8)} BTC</span>
+                    </p>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <p class="text-gray-400 text-sm">Current Value</p>
+                            <p class="text-3xl font-bold positive">${formatCurrency(currentValue)}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Return</p>
+                            <p class="text-3xl font-bold ${totalReturn >= 0 ? 'positive' : 'negative'}">
+                                ${formatPercent(totalReturn)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            resultsPanel.classList.remove('hidden');
 
-            const totalReturnEl = document.getElementById('totalReturn');
-            totalReturnEl.textContent = formatPercent(totalReturn);
-            totalReturnEl.className = 'text-2xl font-bold ' + (totalReturn >= 0 ? 'positive' : 'negative');
+            // CRITICAL: Show historical sections after calculator submission
+            showHistoricalSections();
 
-            document.getElementById('resultsPanel').classList.remove('hidden');
-
-            // Update table with comparison column
+            // Render all views
+            renderChart(todayData);
+            renderTimelineCards(todayData);
             renderTable(todayData, purchaseDateStr, purchasePrice);
+
+            // Trigger block alignment after chart renders
+            setTimeout(() => alignBlocksWithChart(), 100);
+        }
+
+        // Helper functions for showing/hiding historical sections
+        function hideHistoricalSections() {
+            const wrapper = document.getElementById('chartWithBlocksWrapper');
+            const table = document.getElementById('tableSection');
+            if (wrapper) wrapper.classList.add('hidden');
+            if (table) table.classList.add('hidden');
+        }
+
+        function showHistoricalSections() {
+            const wrapper = document.getElementById('chartWithBlocksWrapper');
+            const table = document.getElementById('tableSection');
+            if (wrapper) wrapper.classList.remove('hidden');
+            if (table) table.classList.remove('hidden');
         }
 
         // Load data from CSV file or use sample data
-        async function loadData() {
+        async function loadData(skipRender = false) {
             let csvText = null;
             
             // Try to load the CSV file
@@ -742,21 +796,33 @@
                 
                 todayData = calculateMetrics(todayData);
             }
-            
-            renderTimelineCards(todayData);
-            renderTable(todayData);
-            renderChart(todayData);
+
+            // Only render if not skipped (for initial page load, we skip rendering)
+            if (!skipRender) {
+                renderTimelineCards(todayData);
+                renderTable(todayData);
+                renderChart(todayData);
+            }
         }
 
         // Initialize
         async function init() {
-            // Set max date for purchase date input to today
+            // 1. Hide historical sections initially (calculator is landing page)
+            hideHistoricalSections();
+
+            // 2. Set max date for purchase date input to today
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
             document.getElementById('purchaseDate').setAttribute('max', todayStr);
 
-            await loadData();
+            // 3. Load data in background (skip rendering)
+            await loadData(true);
+
+            // 4. Fetch live price in background
             await fetchCurrentPrice();
+
+            // 5. Setup resize handler for block-chart alignment
+            setupChartResizeHandler();
         }
 
         init();
