@@ -23,6 +23,46 @@
         }
         .positive { color: #22c55e; }
         .negative { color: #ef4444; }
+        .timeline-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #f7931a #1a1a2e;
+        }
+        .timeline-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .timeline-container::-webkit-scrollbar-track {
+            background: #1a1a2e;
+            border-radius: 10px;
+        }
+        .timeline-container::-webkit-scrollbar-thumb {
+            background: #f7931a;
+            border-radius: 10px;
+        }
+        .timeline-card {
+            min-width: 200px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .timeline-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(247, 147, 26, 0.3);
+        }
+        .current-year {
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.2) 0%, rgba(255, 171, 64, 0.2) 100%);
+            border: 2px solid #f7931a;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(247, 147, 26, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(247, 147, 26, 0.8); }
+        }
+        .price-trend-up {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        .price-trend-down {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen text-white">
@@ -40,11 +80,28 @@
             <p id="currentDate" class="text-xl mt-2 gold-text font-semibold"></p>
         </header>
 
-        <!-- Live Price Banner -->
-        <div class="glass-card rounded-xl p-6 mb-8 text-center">
-            <p class="text-gray-400 mb-2">Today's Bitcoin Price</p>
-            <div id="livePrice" class="text-5xl font-bold gold-text mb-2">Loading...</div>
-            <p id="priceSource" class="text-gray-500 text-sm"></p>
+        <!-- Bitcoin Price Timeline -->
+        <div class="glass-card rounded-xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                    <svg class="w-6 h-6 gold-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    Bitcoin Price Timeline - <span id="timelineDate" class="gold-text"></span>
+                </h2>
+                <div class="text-right">
+                    <p class="text-gray-400 text-xs">Today's Price</p>
+                    <div id="livePrice" class="text-2xl font-bold gold-text">Loading...</div>
+                </div>
+            </div>
+            <div class="timeline-container pb-4" id="timelineContainer">
+                <div class="flex gap-4" id="timelineCards">
+                    <div class="timeline-card glass-card rounded-lg p-4 text-center">
+                        <p class="text-gray-400 text-sm">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <p id="priceSource" class="text-gray-500 text-xs text-center mt-2"></p>
         </div>
 
         <!-- Purchase Year Selector -->
@@ -183,9 +240,11 @@
         // Display current date
         const monthNames = ["January", "February", "March", "April", "May", "June", 
                            "July", "August", "September", "October", "November", "December"];
-        document.getElementById('currentDate').textContent = 
+        document.getElementById('currentDate').textContent =
             `${monthNames[todayMonth - 1]} ${todayDay}, ${todayYear}`;
-        document.getElementById('tableDateHeader').textContent = 
+        document.getElementById('tableDateHeader').textContent =
+            `${monthNames[todayMonth - 1]} ${todayDay}`;
+        document.getElementById('timelineDate').textContent =
             `${monthNames[todayMonth - 1]} ${todayDay}`;
 
         // Parse CSV data
@@ -417,6 +476,56 @@
             });
         }
 
+        // Render timeline cards
+        function renderTimelineCards(data) {
+            const container = document.getElementById('timelineCards');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="timeline-card glass-card rounded-lg p-4 text-center"><p class="text-gray-400 text-sm">No data available</p></div>';
+                return;
+            }
+
+            container.innerHTML = data.map((item, index) => {
+                const isCurrentYear = item.year === todayYear;
+                const prevItem = index > 0 ? data[index - 1] : null;
+                let changePercent = null;
+                let changeClass = '';
+                let trendClass = '';
+
+                if (prevItem) {
+                    changePercent = ((item.price - prevItem.price) / prevItem.price) * 100;
+                    changeClass = changePercent >= 0 ? 'positive' : 'negative';
+                    trendClass = changePercent >= 0 ? 'price-trend-up' : 'price-trend-down';
+                }
+
+                const currentYearClass = isCurrentYear ? 'current-year' : '';
+
+                return `
+                    <div class="timeline-card glass-card rounded-lg p-5 ${currentYearClass} ${trendClass}" style="position: relative;">
+                        ${isCurrentYear ? '<div style="position: absolute; top: -8px; right: -8px; background: #f7931a; color: black; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 12px;">NOW</div>' : ''}
+                        <div class="text-3xl font-bold gold-text mb-1">${item.year}</div>
+                        <div class="text-2xl font-bold text-white mb-2">${formatCurrency(item.price)}</div>
+                        ${changePercent !== null ? `
+                            <div class="flex items-center justify-center gap-1 ${changeClass}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${changePercent >= 0 ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6'}"></path>
+                                </svg>
+                                <span class="text-sm font-semibold">${formatPercent(changePercent, false)}</span>
+                            </div>
+                        ` : '<div class="text-xs text-gray-500">First year</div>'}
+                        ${item.returnSinceGenesis ? `<div class="text-xs text-gray-400 mt-2">+${formatPercent(item.returnSinceGenesis, false)} from genesis</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Auto-scroll to current year
+            setTimeout(() => {
+                const currentYearCard = container.querySelector('.current-year');
+                if (currentYearCard) {
+                    currentYearCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }, 100);
+        }
+
         // Fetch current BTC price
         async function fetchCurrentPrice() {
             try {
@@ -529,6 +638,7 @@
                 todayData = calculateMetrics(todayData);
             }
             
+            renderTimelineCards(todayData);
             renderTable(todayData);
             renderChart(todayData);
         }
