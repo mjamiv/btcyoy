@@ -26,27 +26,24 @@
 
         /* Grid-based blocks overlay for chart alignment */
         .blocks-overlay {
-            display: grid;
             width: 100%;
             margin-bottom: 1rem;
             position: relative;
             min-height: 100px;
-            gap: 4px;
         }
 
         /* Aligned block styling */
         .aligned-block {
             min-width: 0;
             max-width: 60px;
-            width: 100%;
+            width: 60px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            justify-self: center;
+            position: absolute;
             text-align: center;
         }
 
         .aligned-block:hover {
-            transform: translateY(-4px) scale(1.05);
+            transform: translateX(-50%) translateY(-4px) scale(1.05);
             box-shadow: 0 10px 20px rgba(247, 147, 26, 0.3);
             z-index: 10;
         }
@@ -55,12 +52,14 @@
         @media (max-width: 1024px) {
             .aligned-block {
                 max-width: 50px;
+                width: 50px;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
                 max-width: 45px;
+                width: 45px;
                 font-size: 0.75rem;
             }
         }
@@ -587,41 +586,19 @@
             const chartArea = chart.chartArea;
             if (!chartArea) return;
 
-            // Calculate exact pixel position for each data point
-            const blockPositions = [];
-            for (let i = 0; i < todayData.length; i++) {
-                const pixelX = xScale.getPixelForValue(i);
-                blockPositions.push(pixelX);
-            }
-
-            // Create CSS Grid columns based on chart positions
-            const gridColumns = [];
-            let prevPosition = chartArea.left;
-
-            for (let i = 0; i < blockPositions.length; i++) {
-                const position = blockPositions[i];
-                const columnWidth = position - prevPosition;
-                gridColumns.push(`${columnWidth}px`);
-                prevPosition = position;
-            }
-
-            // Add remaining space
-            const remaining = chartArea.right - prevPosition;
-            if (remaining > 0) {
-                gridColumns.push(`${remaining}px`);
-            }
-
-            // Apply grid template to blocks container
             const blocksContainer = document.getElementById('blocksOverlay');
-            if (blocksContainer) {
-                blocksContainer.style.gridTemplateColumns = gridColumns.join(' ');
+            if (!blocksContainer) return;
 
-                // Position each block in its grid column
-                const blockElements = blocksContainer.querySelectorAll('.aligned-block');
-                blockElements.forEach((block, index) => {
-                    block.style.gridColumn = index + 1;
-                });
-            }
+            const blockElements = blocksContainer.querySelectorAll('.aligned-block');
+
+            // Position each block at the exact pixel position of its data point
+            blockElements.forEach((block, index) => {
+                const pixelX = xScale.getPixelForValue(index);
+
+                // Center the block at the data point by using transform
+                block.style.left = `${pixelX}px`;
+                block.style.transform = 'translateX(-50%)';
+            });
         }
 
         // Setup window resize handler for maintaining block-chart alignment
