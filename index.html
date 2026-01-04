@@ -560,7 +560,7 @@
                 return `
                     <div class="aligned-block glass-card rounded p-1.5 ${trendClass}">
                         <div class="text-xs font-bold gold-text">${item.year}</div>
-                        <div style="font-size: 0.65rem;" class="font-semibold text-white leading-tight">${formatCurrency(item.price)}</div>
+                        <div style="font-size: 0.65rem;" class="font-semibold text-white leading-tight">$${Math.round(item.price).toLocaleString('en-US')}</div>
                         ${changePercent !== null ? `
                             <div style="font-size: 0.55rem;" class="${changeClass} leading-tight">
                                 ${changePercent >= 0 ? '↑' : '↓'}${Math.abs(changePercent).toFixed(0)}%
