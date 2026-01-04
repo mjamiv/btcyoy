@@ -37,7 +37,7 @@
         /* Aligned block styling */
         .aligned-block {
             min-width: 0;
-            max-width: 120px;
+            max-width: 60px;
             width: 100%;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
@@ -46,7 +46,7 @@
         }
 
         .aligned-block:hover {
-            transform: translateY(-4px) scale(1.03);
+            transform: translateY(-4px) scale(1.05);
             box-shadow: 0 10px 20px rgba(247, 147, 26, 0.3);
             z-index: 10;
         }
@@ -54,14 +54,14 @@
         /* Responsive block sizing */
         @media (max-width: 1024px) {
             .aligned-block {
-                max-width: 100px;
+                max-width: 50px;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
-                max-width: 80px;
-                font-size: 0.85rem;
+                max-width: 45px;
+                font-size: 0.75rem;
             }
         }
         .block-hash {
@@ -559,12 +559,12 @@
                 const blockHeight = calculateBlockHeight(item.year);
 
                 return `
-                    <div class="aligned-block glass-card rounded-lg p-3 ${trendClass}">
-                        <div class="text-lg font-bold gold-text mb-1">${item.year}</div>
-                        <div class="text-base font-semibold text-white">${formatCurrency(item.price)}</div>
+                    <div class="aligned-block glass-card rounded p-1.5 ${trendClass}">
+                        <div class="text-xs font-bold gold-text">${item.year}</div>
+                        <div style="font-size: 0.65rem;" class="font-semibold text-white leading-tight">${formatCurrency(item.price)}</div>
                         ${changePercent !== null ? `
-                            <div class="text-xs ${changeClass} mt-1">
-                                ${changePercent >= 0 ? '↑' : '↓'} ${Math.abs(changePercent).toFixed(1)}%
+                            <div style="font-size: 0.55rem;" class="${changeClass} leading-tight">
+                                ${changePercent >= 0 ? '↑' : '↓'}${Math.abs(changePercent).toFixed(0)}%
                             </div>
                         ` : ''}
                     </div>
