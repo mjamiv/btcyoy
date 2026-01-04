@@ -475,7 +475,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
         <!-- Footer -->
         <footer class="terminal-footer">
@@ -546,23 +546,52 @@
 
         // Parse CSV data
         function parseCSV(csvText) {
+            // Remove BOM if present
+            csvText = csvText.replace(/^\uFEFF/, '');
+
             const lines = csvText.trim().split('\n');
             const data = {};
-            
+
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
-                const parts = line.split(',');
+
+                // Split CSV by comma, handling quoted fields
+                // This regex splits on commas that are outside quotes
+                const parts = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        parts.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                parts.push(current.trim());
+
                 if (parts.length >= 2) {
-                    const dateStr = parts[0].trim();
-                    const price = parseFloat(parts[1].trim());
-                    
-                    if (!isNaN(price)) {
+                    // Get date and price (first two columns)
+                    let dateStr = parts[0].replace(/"/g, '').trim();
+                    let priceStr = parts[1].replace(/"/g, '').trim();
+
+                    // Remove comma separators from price (e.g., "87,612.7" -> "87612.7")
+                    priceStr = priceStr.replace(/,/g, '');
+                    const price = parseFloat(priceStr);
+
+                    if (!isNaN(price) && dateStr) {
                         data[dateStr] = price;
                     }
                 }
             }
+
+            console.log('Parsed dates count:', Object.keys(data).length);
+            console.log('Sample dates:', Object.keys(data).slice(0, 5));
             return data;
         }
 
@@ -1018,12 +1047,17 @@
 
             // Convert YYYY-MM-DD to MM/DD/YYYY format for lookup
             const dateParts = purchaseDateInput.split('-');
-            const purchaseDateStr = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+            const year = dateParts[0];
+            const month = dateParts[1].padStart(2, '0');
+            const day = dateParts[2].padStart(2, '0');
+            const purchaseDateStr = `${month}/${day}/${year}`;
 
             // Look up price for the specific date
             const purchasePrice = historicalData[purchaseDateStr];
             if (!purchasePrice) {
-                alert(`No price data available for ${purchaseDateStr}. Please select a different date.`);
+                console.log('Available dates:', Object.keys(historicalData).slice(0, 10));
+                console.log('Looking for:', purchaseDateStr);
+                alert(`No price data available for ${purchaseDateStr}.\n\nNote: Historical data may only be available for specific dates.\nTry selecting January 3rd or November 23rd of any year.`);
                 return;
             }
 
@@ -1037,19 +1071,19 @@
             // Display in new format: "On [date] I invested [$X] to purchase [Y] BTC"
             const resultsPanel = document.getElementById('resultsPanel');
             resultsPanel.innerHTML = `
-                <div class="bg-gray-800/50 rounded-lg p-6 text-center">
-                    <p class="text-xl mb-4 leading-relaxed">
-                        On <span class="gold-text font-bold">${purchaseDateStr}</span>
-                        I invested <span class="gold-text font-bold">${formatCurrency(investmentAmount)}</span>
-                        to purchase <span class="gold-text font-bold">${btcAmount.toFixed(8)} BTC</span>
+                <div class="terminal-card p-6 text-center">
+                    <p class="text-xl mb-4 leading-relaxed text-white">
+                        > On <span class="text-amber font-bold">${purchaseDateStr}</span>
+                        I invested <span class="text-amber font-bold">${formatCurrency(investmentAmount)}</span>
+                        to purchase <span class="text-amber font-bold">${btcAmount.toFixed(8)} BTC</span>
                     </p>
                     <div class="grid grid-cols-2 gap-4 mt-4">
                         <div>
-                            <p class="text-gray-400 text-sm">Current Value</p>
+                            <p class="text-dim text-sm">Current Value</p>
                             <p class="text-3xl font-bold positive">${formatCurrency(currentValue)}</p>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-sm">Total Return</p>
+                            <p class="text-dim text-sm">Total Return</p>
                             <p class="text-3xl font-bold ${totalReturn >= 0 ? 'positive' : 'negative'}">
                                 ${formatPercent(totalReturn)}
                             </p>
@@ -1089,25 +1123,24 @@
         // Load data from CSV file or use sample data
         async function loadData(skipRender = false) {
             let csvText = null;
-            
-            // Try to load the CSV file
-            try {
-                const response = await fetch('btc-historical-price.csv');
-                if (response.ok) {
-                    csvText = await response.text();
-                }
-            } catch (e) {
-                console.log('CSV file not found, trying without extension...');
-            }
-            
-            if (!csvText) {
+
+            // Try to load the CSV file - try multiple filenames
+            const filenames = [
+                'Bitcoin Historical Data_missing data.csv',
+                'btc-historical-price.csv',
+                'btc-historical-price'
+            ];
+
+            for (const filename of filenames) {
                 try {
-                    const response = await fetch('btc-historical-price');
+                    const response = await fetch(filename);
                     if (response.ok) {
                         csvText = await response.text();
+                        console.log(`Successfully loaded: ${filename}`);
+                        break;
                     }
                 } catch (e) {
-                    console.log('Using sample data');
+                    console.log(`Failed to load ${filename}`);
                 }
             }
             
