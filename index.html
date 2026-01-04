@@ -426,6 +426,8 @@
             tbody.innerHTML = data.map(item => {
                 const returnClass = item.returnSinceGenesis >= 0 ? 'positive' : 'negative';
                 const cagrClass = item.cagr5Year !== null && item.cagr5Year >= 0 ? 'positive' : 'negative';
+                const isCurrentYear = item.year === todayYear;
+                const rowClass = isCurrentYear ? 'bg-orange-500/10 border-orange-500/50' : '';
 
                 let comparisonCell = '';
                 if (purchaseDate && purchasePrice) {
@@ -440,8 +442,8 @@
                 }
 
                 return `
-                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition-colors">
-                        <td class="py-3 px-4">${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}</td>
+                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition-colors ${rowClass}">
+                        <td class="py-3 px-4">${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}${isCurrentYear ? ' 🔴 LIVE' : ''}</td>
                         <td class="text-right py-3 px-4 font-mono font-medium gold-text">${formatCurrencyTable(item.price)}</td>
                         <td class="text-right py-3 px-4 ${returnClass} font-medium">${formatPercentTable(item.returnSinceGenesis)}</td>
                         <td class="text-right py-3 px-4 ${cagrClass} font-medium">${item.cagr5Year !== null ? formatPercentTable(item.cagr5Year) : '-'}</td>
@@ -577,12 +579,16 @@
                     trendClass = changePercent >= 0 ? 'price-trend-up' : 'price-trend-down';
                 }
 
+                // Highlight current year
+                const isCurrentYear = item.year === todayYear;
+                const currentYearClass = isCurrentYear ? 'current-year' : '';
+
                 const blockHash = generateBlockHash(item.year, item.price);
                 const blockHeight = calculateBlockHeight(item.year);
 
                 return `
-                    <div class="aligned-block glass-card rounded p-2 ${trendClass}" style="z-index: 1;">
-                        <div class="text-sm font-bold gold-text">${item.year}</div>
+                    <div class="aligned-block glass-card rounded p-2 ${trendClass} ${currentYearClass}" style="z-index: 1;">
+                        <div class="text-sm font-bold gold-text">${item.year}${isCurrentYear ? ' 🔴' : ''}</div>
                         <div class="text-xs font-semibold text-white leading-tight">$${Math.round(item.price).toLocaleString('en-US')}</div>
                         ${changePercent !== null ? `
                             <div style="font-size: 0.6rem;" class="${changeClass} leading-tight">
@@ -659,7 +665,7 @@
             });
         }
 
-        // Fetch current BTC price
+        // Fetch current BTC price and add to todayData
         async function fetchCurrentPrice() {
             try {
                 const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
@@ -668,12 +674,39 @@
                 document.getElementById('livePrice').textContent = formatCurrency(currentPrice);
                 document.getElementById('priceSource').textContent = 'Live price from CoinGecko';
 
+                // Add current year's price to todayData
+                addCurrentYearToData();
+
                 return currentPrice;
             } catch (error) {
                 console.error('Failed to fetch current price:', error);
                 document.getElementById('livePrice').textContent = 'Unable to fetch';
                 document.getElementById('priceSource').textContent = 'API unavailable';
                 return null;
+            }
+        }
+
+        // Add current year's price to the dataset
+        function addCurrentYearToData() {
+            if (!currentPrice || !todayData) return;
+
+            // Check if current year already exists in data
+            const currentYearExists = todayData.some(item => item.year === todayYear);
+
+            if (!currentYearExists) {
+                // Add current year with live price
+                const dateStr = `${todayMonth.toString().padStart(2, '0')}/${todayDay.toString().padStart(2, '0')}/${todayYear}`;
+                todayData.push({
+                    date: dateStr,
+                    year: todayYear,
+                    price: currentPrice
+                });
+
+                // Sort by year
+                todayData.sort((a, b) => a.year - b.year);
+
+                // Recalculate metrics
+                todayData = calculateMetrics(todayData);
             }
         }
 
