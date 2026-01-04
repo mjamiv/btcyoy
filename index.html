@@ -35,8 +35,8 @@
         /* Aligned block styling */
         .aligned-block {
             min-width: 0;
-            max-width: 60px;
-            width: 60px;
+            max-width: 90px;
+            width: 90px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: absolute;
             text-align: center;
@@ -48,18 +48,28 @@
             z-index: 10;
         }
 
+        /* Connecting line between blocks */
+        .block-connector {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(247, 147, 26, 0.3) 0%, rgba(247, 147, 26, 0.6) 50%, rgba(247, 147, 26, 0.3) 100%);
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+
         /* Responsive block sizing */
         @media (max-width: 1024px) {
             .aligned-block {
-                max-width: 50px;
-                width: 50px;
+                max-width: 75px;
+                width: 75px;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
-                max-width: 45px;
-                width: 45px;
+                max-width: 60px;
+                width: 60px;
                 font-size: 0.75rem;
             }
         }
@@ -558,11 +568,11 @@
                 const blockHeight = calculateBlockHeight(item.year);
 
                 return `
-                    <div class="aligned-block glass-card rounded p-1.5 ${trendClass}">
-                        <div class="text-xs font-bold gold-text">${item.year}</div>
-                        <div style="font-size: 0.65rem;" class="font-semibold text-white leading-tight">$${Math.round(item.price).toLocaleString('en-US')}</div>
+                    <div class="aligned-block glass-card rounded p-2 ${trendClass}" style="z-index: 1;">
+                        <div class="text-sm font-bold gold-text">${item.year}</div>
+                        <div class="text-xs font-semibold text-white leading-tight">$${Math.round(item.price).toLocaleString('en-US')}</div>
                         ${changePercent !== null ? `
-                            <div style="font-size: 0.55rem;" class="${changeClass} leading-tight">
+                            <div style="font-size: 0.6rem;" class="${changeClass} leading-tight">
                                 ${changePercent >= 0 ? '↑' : '↓'}${Math.abs(changePercent).toFixed(0)}%
                             </div>
                         ` : ''}
@@ -589,16 +599,30 @@
             const blocksContainer = document.getElementById('blocksOverlay');
             if (!blocksContainer) return;
 
+            // Remove existing connectors
+            blocksContainer.querySelectorAll('.block-connector').forEach(el => el.remove());
+
             const blockElements = blocksContainer.querySelectorAll('.aligned-block');
+            const positions = [];
 
             // Position each block at the exact pixel position of its data point
             blockElements.forEach((block, index) => {
                 const pixelX = xScale.getPixelForValue(index);
+                positions.push(pixelX);
 
                 // Center the block at the data point by using transform
                 block.style.left = `${pixelX}px`;
                 block.style.transform = 'translateX(-50%)';
             });
+
+            // Create connecting lines between blocks
+            for (let i = 0; i < positions.length - 1; i++) {
+                const connector = document.createElement('div');
+                connector.className = 'block-connector';
+                connector.style.left = `${positions[i]}px`;
+                connector.style.width = `${positions[i + 1] - positions[i]}px`;
+                blocksContainer.appendChild(connector);
+            }
         }
 
         // Setup window resize handler for maintaining block-chart alignment
