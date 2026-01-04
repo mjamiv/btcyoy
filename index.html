@@ -82,13 +82,20 @@
             z-index: 5;
         }
         .current-year {
-            background: linear-gradient(135deg, rgba(247, 147, 26, 0.2) 0%, rgba(255, 171, 64, 0.2) 100%);
-            border: 2px solid #f7931a;
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.3) 0%, rgba(255, 171, 64, 0.3) 100%);
+            border: 3px solid #f7931a;
             animation: pulse 2s infinite;
+            transform: scale(1.05);
         }
         @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(247, 147, 26, 0.4); }
-            50% { box-shadow: 0 0 40px rgba(247, 147, 26, 0.8); }
+            0%, 100% { box-shadow: 0 0 30px rgba(247, 147, 26, 0.6); }
+            50% { box-shadow: 0 0 50px rgba(247, 147, 26, 1); }
+        }
+        .block-height {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #888;
+            font-weight: bold;
         }
         .price-trend-up {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
@@ -520,6 +527,16 @@
             return hash;
         }
 
+        // Calculate approximate block height for a year
+        function calculateBlockHeight(year) {
+            // Bitcoin genesis block: Jan 3, 2009 (block 0)
+            // Approximate blocks per year: 52,560 (6 blocks/hour * 24 * 365)
+            const genesisYear = 2009;
+            const blocksPerYear = 52560;
+            const yearsSinceGenesis = year - genesisYear;
+            return Math.floor(yearsSinceGenesis * blocksPerYear);
+        }
+
         // Render timeline cards
         function renderTimelineCards(data) {
             const container = document.getElementById('timelineCards');
@@ -531,9 +548,31 @@
             // Reverse data to show newest first (2025 -> earlier years)
             const reversedData = [...data].reverse();
 
-            container.innerHTML = reversedData.map((item, index) => {
-                const isCurrentYear = item.year === todayYear;
-                const prevItem = index > 0 ? reversedData[index - 1] : null;
+            // Create 2026 card (current year with live price)
+            const currentYearCard = `
+                <div class="timeline-card glass-card rounded-lg p-5 current-year" style="position: relative;">
+                    <div style="position: absolute; top: -8px; right: -8px; background: #f7931a; color: black; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 12px;">LIVE NOW</div>
+
+                    <!-- Block height -->
+                    <div class="block-height mb-1">Block ${calculateBlockHeight(todayYear).toLocaleString()}</div>
+
+                    <!-- Block header -->
+                    <div class="block-hash mb-2" title="Block ${todayYear}">#${generateBlockHash(todayYear, currentPrice || 0)}</div>
+
+                    <div class="text-3xl font-bold gold-text mb-1">${todayYear}</div>
+                    <div class="text-2xl font-bold text-white mb-2">${currentPrice ? formatCurrency(currentPrice) : 'Loading...'}</div>
+                    <div class="text-xs text-gray-400 mt-2">Today's Price - ${monthNames[todayMonth - 1]} ${todayDay}</div>
+
+                    <!-- Chain link connector -->
+                    <svg class="chain-link" viewBox="0 0 24 24" fill="none" stroke="#f7931a" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
+            `;
+
+            const historicalCards = reversedData.map((item, index) => {
+                const prevItem = index === 0 ? { price: currentPrice || reversedData[0].price } : reversedData[index - 1];
                 let changePercent = null;
                 let changeClass = '';
                 let trendClass = '';
@@ -544,12 +583,13 @@
                     trendClass = changePercent >= 0 ? 'price-trend-up' : 'price-trend-down';
                 }
 
-                const currentYearClass = isCurrentYear ? 'current-year' : '';
                 const blockHash = generateBlockHash(item.year, item.price);
+                const blockHeight = calculateBlockHeight(item.year);
 
                 return `
-                    <div class="timeline-card glass-card rounded-lg p-5 ${currentYearClass} ${trendClass}" style="position: relative;">
-                        ${isCurrentYear ? '<div style="position: absolute; top: -8px; right: -8px; background: #f7931a; color: black; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 12px;">NOW</div>' : ''}
+                    <div class="timeline-card glass-card rounded-lg p-5 ${trendClass}" style="position: relative;">
+                        <!-- Block height -->
+                        <div class="block-height mb-1">Block ${blockHeight.toLocaleString()}</div>
 
                         <!-- Block header -->
                         <div class="block-hash mb-2" title="Block ${item.year}">#${blockHash}</div>
@@ -577,12 +617,11 @@
                 `;
             }).join('');
 
-            // Auto-scroll to current year
+            container.innerHTML = currentYearCard + historicalCards;
+
+            // Auto-scroll to show the current year (first card)
             setTimeout(() => {
-                const currentYearCard = container.querySelector('.current-year');
-                if (currentYearCard) {
-                    currentYearCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
-                }
+                container.scrollTo({ left: 0, behavior: 'smooth' });
             }, 100);
         }
 
@@ -594,6 +633,12 @@
                 currentPrice = data.bitcoin.usd;
                 document.getElementById('livePrice').textContent = formatCurrency(currentPrice);
                 document.getElementById('priceSource').textContent = 'Live price from CoinGecko';
+
+                // Re-render timeline to update 2026 card with live price
+                if (todayData.length > 0) {
+                    renderTimelineCards(todayData);
+                }
+
                 return currentPrice;
             } catch (error) {
                 console.error('Failed to fetch current price:', error);
@@ -710,8 +755,8 @@
             const todayStr = today.toISOString().split('T')[0];
             document.getElementById('purchaseDate').setAttribute('max', todayStr);
 
-            await fetchCurrentPrice();
             await loadData();
+            await fetchCurrentPrice();
         }
 
         init();
