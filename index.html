@@ -58,9 +58,7 @@
             <div class="flex flex-wrap gap-4 items-end">
                 <div class="flex-1 min-w-48">
                     <label class="block text-gray-400 mb-2">When did you buy Bitcoin?</label>
-                    <select id="purchaseYear" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-orange-500 focus:outline-none">
-                        <option value="">Select a year...</option>
-                    </select>
+                    <input type="date" id="purchaseDate" min="2010-07-18" max="" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-orange-500 focus:outline-none">
                 </div>
                 <div class="flex-1 min-w-48">
                     <label class="block text-gray-400 mb-2">Investment Amount (USD)</label>
@@ -76,6 +74,7 @@
                 <div class="bg-gray-800/50 rounded-lg p-4 text-center">
                     <p class="text-gray-400 text-sm mb-1">Purchase Price</p>
                     <p id="purchasePrice" class="text-2xl font-bold">-</p>
+                    <p id="purchaseDateDisplay" class="text-gray-500 text-xs mt-1"></p>
                 </div>
                 <div class="bg-gray-800/50 rounded-lg p-4 text-center">
                     <p class="text-gray-400 text-sm mb-1">Current Value</p>
@@ -291,30 +290,34 @@
         }
 
         // Render table
-        function renderTable(data, purchaseYear = null) {
+        function renderTable(data, purchaseDate = null, purchasePrice = null) {
             const tbody = document.getElementById('priceTableBody');
             const comparisonHeader = document.getElementById('comparisonHeader');
-            
-            let purchasePrice = null;
-            if (purchaseYear) {
-                const purchaseData = data.find(d => d.year === parseInt(purchaseYear));
-                if (purchaseData) purchasePrice = purchaseData.price;
+
+            // Parse purchase date to get year for comparison
+            let purchaseYear = null;
+            if (purchaseDate) {
+                const parts = purchaseDate.split('/');
+                if (parts.length === 3) {
+                    purchaseYear = parseInt(parts[2]);
+                }
             }
-            
-            comparisonHeader.classList.toggle('hidden', !purchaseYear);
-            
+
+            comparisonHeader.classList.toggle('hidden', !purchaseDate);
+
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No data available for this date</td></tr>';
                 return;
             }
-            
+
             tbody.innerHTML = data.map(item => {
                 const returnClass = item.returnSinceGenesis >= 0 ? 'positive' : 'negative';
                 const cagrClass = item.cagr5Year !== null && item.cagr5Year >= 0 ? 'positive' : 'negative';
-                
+
                 let comparisonCell = '';
-                if (purchaseYear) {
-                    if (purchasePrice && item.year >= parseInt(purchaseYear)) {
+                if (purchaseDate && purchasePrice) {
+                    // Show returns only for years on or after purchase year
+                    if (item.year >= purchaseYear) {
                         const returnSincePurchase = ((item.price - purchasePrice) / purchasePrice) * 100;
                         const returnPurchaseClass = returnSincePurchase >= 0 ? 'positive' : 'negative';
                         comparisonCell = `<td class="text-right py-3 px-4 ${returnPurchaseClass} font-medium">${formatPercent(returnSincePurchase)}</td>`;
@@ -322,7 +325,7 @@
                         comparisonCell = `<td class="text-right py-3 px-4 text-gray-500">-</td>`;
                     }
                 }
-                
+
                 return `
                     <tr class="border-b border-gray-700/50 hover:bg-white/5 transition-colors">
                         <td class="py-3 px-4">${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}</td>
@@ -431,41 +434,46 @@
             }
         }
 
-        // Calculate returns based on purchase year
+        // Calculate returns based on purchase date
         function calculateReturns() {
-            const purchaseYear = document.getElementById('purchaseYear').value;
+            const purchaseDateInput = document.getElementById('purchaseDate').value;
             const investmentAmount = parseFloat(document.getElementById('investmentAmount').value) || 1000;
-            
-            if (!purchaseYear) {
-                alert('Please select a purchase year');
+
+            if (!purchaseDateInput) {
+                alert('Please select a purchase date');
                 return;
             }
-            
-            const purchaseData = todayData.find(d => d.year === parseInt(purchaseYear));
-            if (!purchaseData) {
-                alert('No price data available for the selected year');
+
+            // Convert YYYY-MM-DD to MM/DD/YYYY format for lookup
+            const dateParts = purchaseDateInput.split('-');
+            const purchaseDateStr = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+
+            // Look up price for the specific date
+            const purchasePrice = historicalData[purchaseDateStr];
+            if (!purchasePrice) {
+                alert(`No price data available for ${purchaseDateStr}. Please select a different date.`);
                 return;
             }
-            
-            const purchasePrice = purchaseData.price;
+
             const latestData = todayData[todayData.length - 1];
             const latestPrice = currentPrice || latestData.price;
-            
+
             const btcAmount = investmentAmount / purchasePrice;
             const currentValue = btcAmount * latestPrice;
             const totalReturn = ((currentValue - investmentAmount) / investmentAmount) * 100;
-            
+
             document.getElementById('purchasePrice').textContent = formatCurrency(purchasePrice);
+            document.getElementById('purchaseDateDisplay').textContent = purchaseDateStr;
             document.getElementById('currentValue').textContent = formatCurrency(currentValue);
-            
+
             const totalReturnEl = document.getElementById('totalReturn');
             totalReturnEl.textContent = formatPercent(totalReturn);
             totalReturnEl.className = 'text-2xl font-bold ' + (totalReturn >= 0 ? 'positive' : 'negative');
-            
+
             document.getElementById('resultsPanel').classList.remove('hidden');
-            
+
             // Update table with comparison column
-            renderTable(todayData, purchaseYear);
+            renderTable(todayData, purchaseDateStr, purchasePrice);
         }
 
         // Load data from CSV file or use sample data
@@ -521,13 +529,17 @@
                 todayData = calculateMetrics(todayData);
             }
             
-            populateYearSelector(todayData);
             renderTable(todayData);
             renderChart(todayData);
         }
 
         // Initialize
         async function init() {
+            // Set max date for purchase date input to today
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('purchaseDate').setAttribute('max', todayStr);
+
             await fetchCurrentPrice();
             await loadData();
         }
