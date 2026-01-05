@@ -175,7 +175,8 @@
         /* Aligned Block Cards - ANSI Style */
         .aligned-block {
             font-family: var(--font-mono);
-            position: absolute;
+            display: inline-block;
+            vertical-align: top;
             transition: all 0.2s ease;
             white-space: pre;
             line-height: 1;
@@ -185,7 +186,6 @@
 
         .aligned-block:hover {
             filter: brightness(1.2);
-            transform: translateX(-50%) translateY(-2px);
         }
 
         /* Current Year Block */
@@ -559,7 +559,6 @@
         let purchaseYearPrice = null;
         let chart = null;
         let currentPrice = null;
-        let resizeTimeout = null;
         let chartScaleType = 'logarithmic'; // Default to logarithmic scale
 
         // Get today's month and day
@@ -808,9 +807,6 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onResize: (chart, size) => {
-                        setTimeout(() => alignBlocksWithChart(), 50);
-                    },
                     plugins: {
                         legend: {
                             display: false
@@ -903,8 +899,6 @@
             // Re-render chart with new scale if data is available
             if (todayData && todayData.length > 0) {
                 renderChart(todayData);
-                // Re-align blocks after chart renders
-                setTimeout(() => alignBlocksWithChart(), 100);
             }
         }
 
@@ -971,65 +965,25 @@
 
                 // Check if this is the last block (no connector)
                 const isLastBlock = index === data.length - 1;
-                const connector = isLastBlock ? '       ' : ' ████╗ ';
-                const connectorBottom = isLastBlock ? '       ' : ' ╚═══╝ ';
+                const connectorLine5 = isLastBlock ? '' : ' ████╗';
+                const connectorLine6 = isLastBlock ? '' : ' ╚═══╝';
+                const spacer = isLastBlock ? '' : ' ';
 
-                return `<div class="aligned-block ${currentYearClass}" style="z-index: 1;">███████████████████╗${connector}
-██               ██║${connector}
-██ <span class="ansi-block-date">${datePadded}</span>██║${connector}
-██               ██║${connector}
-██ <span class="ansi-block-price">${pricePadded}</span>██║${connector}
-██               ██║${connector}
-██ <span class="${changeClass}">${changePadded}</span>██║${connector}
-██               ██║${connector}
-███████████████████║${connector}
-╚══════════════════╝${connectorBottom}</div>`;
+                return `<div class="aligned-block ${currentYearClass}">███████████████████╗${spacer}
+██               ██║${spacer}
+██ <span class="ansi-block-date">${datePadded}</span>██║${spacer}
+██               ██║${spacer}
+██ <span class="ansi-block-price">${pricePadded}</span>██║${connectorLine5}
+██               ██║${connectorLine6}
+██ <span class="${changeClass}">${changePadded}</span>██║${spacer}
+██               ██║${spacer}
+███████████████████║${spacer}
+╚══════════════════╝${spacer}</div>`;
             }).join('');
 
             container.innerHTML = blocks;
         }
 
-        // Align blockchain blocks with chart plot points
-        function alignBlocksWithChart() {
-            if (!chart || !todayData || todayData.length === 0) return;
-
-            const xScale = chart.scales.x;
-            if (!xScale) return;
-
-            const chartCanvas = document.getElementById('priceChart');
-            if (!chartCanvas) return;
-
-            const chartArea = chart.chartArea;
-            if (!chartArea) return;
-
-            const blocksContainer = document.getElementById('blocksOverlay');
-            if (!blocksContainer) return;
-
-            const blockElements = blocksContainer.querySelectorAll('.aligned-block');
-
-            // Position each block at the exact pixel position of its data point
-            blockElements.forEach((block, index) => {
-                const pixelX = xScale.getPixelForValue(index);
-
-                // Center the block at the data point by using transform
-                block.style.left = `${pixelX}px`;
-                block.style.transform = 'translateX(-50%)';
-            });
-        }
-
-        // Setup window resize handler for maintaining block-chart alignment
-        function setupChartResizeHandler() {
-            window.addEventListener('resize', () => {
-                if (resizeTimeout) {
-                    clearTimeout(resizeTimeout);
-                }
-                resizeTimeout = setTimeout(() => {
-                    if (chart) {
-                        alignBlocksWithChart();
-                    }
-                }, 150);
-            });
-        }
 
         // Fetch current BTC price and add to todayData
         async function fetchCurrentPrice() {
@@ -1147,9 +1101,6 @@
             renderChart(todayData);
             renderTimelineCards(todayData);
             renderTable(todayData, purchaseDateStr, purchasePrice);
-
-            // Trigger block alignment after chart renders
-            setTimeout(() => alignBlocksWithChart(), 100);
         }
 
         // Helper functions for showing/hiding historical sections
@@ -1246,9 +1197,6 @@
 
             // 4. Fetch live price in background
             await fetchCurrentPrice();
-
-            // 5. Setup resize handler for block-chart alignment
-            setupChartResizeHandler();
         }
 
         init();
