@@ -119,49 +119,6 @@
             margin-top: 1rem;
         }
 
-        /* Terminal Input Fields */
-        input[type="date"],
-        input[type="number"],
-        input[type="text"] {
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            font-family: var(--font-mono);
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            width: 100%;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--border-active);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-        }
-
-        /* Terminal Button */
-        .terminal-btn {
-            background-color: transparent;
-            border: 1px solid var(--btc-orange);
-            color: var(--btc-orange);
-            font-family: var(--font-mono);
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: all 0.15s ease;
-            font-weight: 500;
-        }
-
-        .terminal-btn:hover {
-            background-color: var(--btc-orange);
-            color: var(--bg-primary);
-            box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
-        }
-
-        .terminal-btn:active {
-            transform: translateY(1px);
-        }
-
         /* Blockchain Blocks Overlay */
         .blocks-overlay {
             width: 100%;
@@ -439,83 +396,42 @@
 </pre>
         </header>
 
-        <!-- Investment Calculator -->
+        <!-- Bitcoin Blockchain Blocks -->
         <section class="terminal-card">
-            <div class="section-header">
-                <span class="text-cyan">[CALC]</span> INVESTMENT CALCULATOR
-            </div>
-            <div class="flex flex-wrap gap-4 items-end">
-                <div class="flex-1 min-w-48">
-                    <label class="block text-dim mb-2">> Purchase Date:</label>
-                    <input type="date" id="purchaseDate" min="2010-07-18" max="">
+            <div class="flex items-center justify-between mb-4">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <span class="text-cyan">[BLOCK]</span> BITCOIN BLOCKCHAIN - <span id="timelineDate" class="text-amber"></span>
                 </div>
-                <div class="flex-1 min-w-48">
-                    <label class="block text-dim mb-2">> Investment (USD):</label>
-                    <input type="number" id="investmentAmount" value="1000" min="1">
+                <div class="text-right">
+                    <p class="text-dim text-xs">TODAY</p>
+                    <div id="livePrice" class="text-2xl font-bold text-amber">Loading...</div>
+                    <span class="live-indicator text-xs">[LIVE]</span>
                 </div>
-                <button onclick="calculateReturns()" class="terminal-btn">
-                    [ CALCULATE RETURNS ]
-                </button>
             </div>
+            <div id="blocksOverlay" class="blocks-overlay">
+                <!-- Blocks will be dynamically generated and positioned here -->
+            </div>
+            <p id="priceSource" class="text-dim text-xs text-center mt-2"></p>
+        </section>
 
-            <!-- Results Panel -->
-            <div id="resultsPanel" class="hidden mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="terminal-card p-4 text-center">
-                    <p class="text-dim text-sm mb-1">Purchase Price</p>
-                    <p id="purchasePrice" class="text-2xl font-bold text-amber">-</p>
-                    <p id="purchaseDateDisplay" class="text-dim text-xs mt-1"></p>
+        <!-- Chart Section -->
+        <section class="terminal-card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <span class="text-cyan">[CHART]</span> PRICE ON THIS DAY EACH YEAR
                 </div>
-                <div class="terminal-card p-4 text-center">
-                    <p class="text-dim text-sm mb-1">Current Value</p>
-                    <p id="currentValue" class="text-2xl font-bold positive">-</p>
+                <div class="scale-toggle">
+                    <button id="logScaleBtn" class="active" onclick="setChartScale('logarithmic')">LOG</button>
+                    <button id="linearScaleBtn" onclick="setChartScale('linear')">LINEAR</button>
                 </div>
-                <div class="terminal-card p-4 text-center">
-                    <p class="text-dim text-sm mb-1">Total Return</p>
-                    <p id="totalReturn" class="text-2xl font-bold">-</p>
-                </div>
+            </div>
+            <div class="relative h-80">
+                <canvas id="priceChart"></canvas>
             </div>
         </section>
 
-        <!-- Historical Data (Hidden until calculator submission) -->
-        <div id="chartWithBlocksWrapper" class="hidden">
-            <!-- Bitcoin Blockchain Blocks -->
-            <section class="terminal-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="section-header" style="margin-bottom: 0;">
-                        <span class="text-cyan">[BLOCK]</span> BITCOIN BLOCKCHAIN - <span id="timelineDate" class="text-amber"></span>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-dim text-xs">TODAY</p>
-                        <div id="livePrice" class="text-2xl font-bold text-amber">Loading...</div>
-                        <span class="live-indicator text-xs">[LIVE]</span>
-                    </div>
-                </div>
-                <div id="blocksOverlay" class="blocks-overlay">
-                    <!-- Blocks will be dynamically generated and positioned here -->
-                </div>
-                <p id="priceSource" class="text-dim text-xs text-center mt-2"></p>
-            </section>
-
-            <!-- Chart Section -->
-            <section class="terminal-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="section-header" style="margin-bottom: 0;">
-                        <span class="text-cyan">[CHART]</span> PRICE ON THIS DAY EACH YEAR
-                    </div>
-                    <div class="scale-toggle">
-                        <button id="logScaleBtn" class="active" onclick="setChartScale('logarithmic')">LOG</button>
-                        <button id="linearScaleBtn" onclick="setChartScale('linear')">LINEAR</button>
-                    </div>
-                </div>
-                <div class="relative h-80">
-                    <canvas id="priceChart"></canvas>
-                </div>
-            </section>
-        </div>
-        <!-- End of chartWithBlocksWrapper -->
-
         <!-- Data Table -->
-        <section id="tableSection" class="terminal-card hidden">
+        <section id="tableSection" class="terminal-card">
             <div class="section-header">
                 <span class="text-cyan">[DATA]</span> HISTORICAL DATA FOR <span id="tableDateHeader" class="text-amber"></span>
             </div>
@@ -527,11 +443,10 @@
                             <th class="text-right">BTC/USD</th>
                             <th class="text-right">RETURN</th>
                             <th class="text-right">5YR CAGR</th>
-                            <th id="comparisonHeader" class="text-right hidden">VS PURCHASE</th>
                         </tr>
                     </thead>
                     <tbody id="priceTableBody">
-                        <tr><td colspan="5" class="text-center py-8 text-dim">[ Loading data... ]</td></tr>
+                        <tr><td colspan="4" class="text-center py-8 text-dim">[ Loading data... ]</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -583,10 +498,9 @@
 
         let historicalData = {};
         let todayData = [];
-        let purchaseYearPrice = null;
         let chart = null;
         let currentPrice = null;
-        let chartScaleType = 'logarithmic'; // Default to logarithmic scale
+        let chartScaleType = 'logarithmic';
 
         // Get today's month and day
         const today = new Date();
@@ -717,13 +631,6 @@
             return '$' + Math.round(value).toLocaleString('en-US');
         }
 
-        // Format percentage
-        function formatPercent(value, includeSign = true) {
-            if (value === null || value === undefined) return '-';
-            const sign = value >= 0 ? '+' : '';
-            return (includeSign ? sign : '') + value.toFixed(2) + '%';
-        }
-
         // Format percentage for table (whole numbers)
         function formatPercentTable(value, includeSign = true) {
             if (value === null || value === undefined) return '-';
@@ -732,23 +639,11 @@
         }
 
         // Render table
-        function renderTable(data, purchaseDate = null, purchasePrice = null) {
+        function renderTable(data) {
             const tbody = document.getElementById('priceTableBody');
-            const comparisonHeader = document.getElementById('comparisonHeader');
-
-            // Parse purchase date to get year for comparison
-            let purchaseYear = null;
-            if (purchaseDate) {
-                const parts = purchaseDate.split('/');
-                if (parts.length === 3) {
-                    purchaseYear = parseInt(parts[2]);
-                }
-            }
-
-            comparisonHeader.classList.toggle('hidden', !purchaseDate);
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-dim">[ No data available ]</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-dim">[ No data available ]</td></tr>';
                 return;
             }
 
@@ -757,21 +652,7 @@
                 const cagrClass = item.cagr5Year !== null && item.cagr5Year >= 0 ? 'positive' : 'negative';
                 const isCurrentYear = item.year === todayYear;
                 const rowClass = isCurrentYear ? 'current-row' : '';
-
-                // ASCII live indicator instead of emoji
                 const liveTag = isCurrentYear ? ' <span class="live-indicator">[LIVE]</span>' : '';
-
-                let comparisonCell = '';
-                if (purchaseDate && purchasePrice) {
-                    // Show returns only for years on or after purchase year
-                    if (item.year >= purchaseYear) {
-                        const returnSincePurchase = ((item.price - purchasePrice) / purchasePrice) * 100;
-                        const returnPurchaseClass = returnSincePurchase >= 0 ? 'positive' : 'negative';
-                        comparisonCell = `<td class="text-right ${returnPurchaseClass}">${formatPercentTable(returnSincePurchase)}</td>`;
-                    } else {
-                        comparisonCell = `<td class="text-right text-dim">---</td>`;
-                    }
-                }
 
                 return `
                     <tr class="${rowClass}">
@@ -779,7 +660,6 @@
                         <td class="text-right text-amber">${formatCurrencyTable(item.price)}</td>
                         <td class="text-right ${returnClass}">${formatPercentTable(item.returnSinceGenesis)}</td>
                         <td class="text-right ${cagrClass}">${item.cagr5Year !== null ? formatPercentTable(item.cagr5Year) : '---'}</td>
-                        ${comparisonCell}
                     </tr>
                 `;
             }).reverse().join('');
@@ -1056,94 +936,8 @@ ${L10}</div>`;
             }
         }
 
-        // Calculate returns based on purchase date
-        function calculateReturns() {
-            const purchaseDateInput = document.getElementById('purchaseDate').value;
-            const investmentAmount = parseFloat(document.getElementById('investmentAmount').value) || 1000;
-
-            if (!purchaseDateInput) {
-                alert('Please select a purchase date');
-                return;
-            }
-
-            // Verify data is loaded
-            if (Object.keys(historicalData).length === 0) {
-                alert('Historical data is still loading. Please try again in a moment.');
-                return;
-            }
-
-            // Convert YYYY-MM-DD to MM/DD/YYYY format for lookup
-            const dateParts = purchaseDateInput.split('-');
-            const year = dateParts[0];
-            const month = dateParts[1].padStart(2, '0');
-            const day = dateParts[2].padStart(2, '0');
-            const purchaseDateStr = `${month}/${day}/${year}`;
-
-            // Look up price for the specific date
-            const purchasePrice = historicalData[purchaseDateStr];
-            if (!purchasePrice) {
-                alert(`No price data available for ${purchaseDateStr}.\n\nNote: Historical data may only be available for specific dates.\nTry selecting January 3rd or November 23rd of any year.`);
-                return;
-            }
-
-            const latestData = todayData[todayData.length - 1];
-            const latestPrice = currentPrice || latestData.price;
-
-            const btcAmount = investmentAmount / purchasePrice;
-            const currentValue = btcAmount * latestPrice;
-            const totalReturn = ((currentValue - investmentAmount) / investmentAmount) * 100;
-
-            // Display in new format: "On [date] I invested [$X] to purchase [Y] BTC"
-            const resultsPanel = document.getElementById('resultsPanel');
-            resultsPanel.innerHTML = `
-                <div class="terminal-card p-6 text-center">
-                    <p class="text-xl mb-4 leading-relaxed text-white">
-                        > On <span class="text-amber font-bold">${purchaseDateStr}</span>
-                        I invested <span class="text-amber font-bold">${formatCurrency(investmentAmount)}</span>
-                        to purchase <span class="text-amber font-bold">${btcAmount.toFixed(8)} BTC</span>
-                    </p>
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div>
-                            <p class="text-dim text-sm">Current Value</p>
-                            <p class="text-3xl font-bold positive">${formatCurrency(currentValue)}</p>
-                        </div>
-                        <div>
-                            <p class="text-dim text-sm">Total Return</p>
-                            <p class="text-3xl font-bold ${totalReturn >= 0 ? 'positive' : 'negative'}">
-                                ${formatPercent(totalReturn)}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            resultsPanel.classList.remove('hidden');
-
-            // CRITICAL: Show historical sections after calculator submission
-            showHistoricalSections();
-
-            // Render all views
-            renderChart(todayData);
-            renderTimelineCards(todayData);
-            renderTable(todayData, purchaseDateStr, purchasePrice);
-        }
-
-        // Helper functions for showing/hiding historical sections
-        function hideHistoricalSections() {
-            const wrapper = document.getElementById('chartWithBlocksWrapper');
-            const table = document.getElementById('tableSection');
-            if (wrapper) wrapper.classList.add('hidden');
-            if (table) table.classList.add('hidden');
-        }
-
-        function showHistoricalSections() {
-            const wrapper = document.getElementById('chartWithBlocksWrapper');
-            const table = document.getElementById('tableSection');
-            if (wrapper) wrapper.classList.remove('hidden');
-            if (table) table.classList.remove('hidden');
-        }
-
         // Load data from CSV file or use sample data
-        async function loadData(skipRender = false) {
+        async function loadData() {
             let csvText = null;
 
             // Try to load the CSV file - try multiple filenames
@@ -1194,28 +988,14 @@ ${L10}</div>`;
                 todayData = calculateMetrics(todayData);
             }
 
-            // Only render if not skipped (for initial page load, we skip rendering)
-            if (!skipRender) {
-                renderTimelineCards(todayData);
-                renderTable(todayData);
-                renderChart(todayData);
-            }
+            renderTimelineCards(todayData);
+            renderTable(todayData);
+            renderChart(todayData);
         }
 
         // Initialize
         async function init() {
-            // 1. Hide historical sections initially (calculator is landing page)
-            hideHistoricalSections();
-
-            // 2. Set max date for purchase date input to today
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            document.getElementById('purchaseDate').setAttribute('max', todayStr);
-
-            // 3. Load data in background (skip rendering)
-            await loadData(true);
-
-            // 4. Fetch live price in background
+            await loadData();
             await fetchCurrentPrice();
         }
 
