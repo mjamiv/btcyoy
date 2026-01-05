@@ -530,10 +530,9 @@
         const todayYear = today.getFullYear();
 
         // Display current date
-        const monthNames = ["January", "February", "March", "April", "May", "June", 
+        const monthNames = ["January", "February", "March", "April", "May", "June",
                            "July", "August", "September", "October", "November", "December"];
-        document.getElementById('currentDate').textContent =
-            `${monthNames[todayMonth - 1]} ${todayDay}, ${todayYear}`;
+        // Note: currentDate element was removed from HTML, so we skip setting it
         document.getElementById('tableDateHeader').textContent =
             `${monthNames[todayMonth - 1]} ${todayDay}`;
         document.getElementById('timelineDate').textContent =
@@ -1040,6 +1039,12 @@
                 return;
             }
 
+            // Verify data is loaded
+            if (Object.keys(historicalData).length === 0) {
+                alert('Historical data is still loading. Please try again in a moment.');
+                return;
+            }
+
             // Convert YYYY-MM-DD to MM/DD/YYYY format for lookup
             const dateParts = purchaseDateInput.split('-');
             const year = dateParts[0];
@@ -1120,7 +1125,9 @@
             let csvText = null;
 
             // Try to load the CSV file - try multiple filenames
+            // Note: URL-encode filenames with spaces for proper fetching
             const filenames = [
+                'Bitcoin%20Historical%20Data_missing%20data.csv',
                 'Bitcoin Historical Data_missing data.csv',
                 'btc-historical-price.csv',
                 'btc-historical-price'
@@ -1146,6 +1153,8 @@
             }
             
             historicalData = parseCSV(csvText);
+            console.log('Historical data entries:', Object.keys(historicalData).length);
+            console.log('Sample lookup test - 12/17/2025:', historicalData['12/17/2025']);
             todayData = filterTodayData(historicalData);
             todayData = calculateMetrics(todayData);
             
