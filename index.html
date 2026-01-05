@@ -237,6 +237,171 @@
             }
         }
 
+        /* ========================================
+           MOBILE OPTIMIZATIONS
+           ======================================== */
+
+        /* Mobile: Hide ASCII logo, show compact header */
+        .mobile-header {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .ascii-logo {
+                display: none;
+            }
+
+            .mobile-header {
+                display: block;
+                text-align: center;
+                padding: 1rem 0;
+            }
+
+            .mobile-header h1 {
+                color: var(--btc-orange);
+                font-size: 1.25rem;
+                font-weight: bold;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.25rem;
+            }
+
+            .mobile-header p {
+                color: var(--text-dim);
+                font-size: 0.75rem;
+            }
+
+            .terminal-header {
+                padding: 1rem 0;
+                margin-bottom: 1rem;
+            }
+
+            .terminal-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .terminal-footer {
+                padding: 1rem 0;
+                margin-top: 1rem;
+            }
+
+            /* Stack section header elements */
+            .section-header-mobile {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.5rem;
+            }
+
+            .section-header-mobile .text-right {
+                text-align: left !important;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .section-header-mobile #livePrice {
+                font-size: 1.25rem !important;
+            }
+
+            /* Reduce section header font size */
+            .section-header {
+                font-size: 0.75rem;
+            }
+
+            /* Chart height reduction */
+            .chart-container-mobile {
+                height: 200px !important;
+            }
+
+            /* Table optimizations */
+            .terminal-table th,
+            .terminal-table td {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            /* Footer divider */
+            .terminal-footer .divider {
+                font-size: 0.5rem;
+                overflow: hidden;
+            }
+
+            /* Container padding */
+            .container {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .mobile-header h1 {
+                font-size: 1rem;
+            }
+
+            .section-header {
+                font-size: 0.625rem;
+            }
+
+            .terminal-table th,
+            .terminal-table td {
+                padding: 0.25rem 0.375rem;
+                font-size: 0.625rem;
+            }
+
+            .chart-container-mobile {
+                height: 180px !important;
+            }
+
+            .scale-toggle button {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.625rem;
+            }
+        }
+
+        /* Blocks scroll indicator */
+        .blocks-overlay {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: var(--btc-orange) var(--bg-card);
+        }
+
+        .blocks-overlay::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .blocks-overlay::-webkit-scrollbar-track {
+            background: var(--bg-card);
+        }
+
+        .blocks-overlay::-webkit-scrollbar-thumb {
+            background-color: var(--btc-orange);
+            border-radius: 3px;
+        }
+
+        /* Scroll hint gradient */
+        .blocks-wrapper {
+            position: relative;
+        }
+
+        .blocks-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 6px;
+            width: 30px;
+            background: linear-gradient(to right, transparent, var(--bg-card));
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        @media (min-width: 1200px) {
+            .blocks-wrapper::after {
+                display: none;
+            }
+        }
+
         /* Terminal Table */
         .terminal-table {
             width: 100%;
@@ -362,7 +527,12 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <header class="terminal-header">
-            <!-- ASCII Bitcoin Logo -->
+            <!-- Mobile Header (shown on small screens) -->
+            <div class="mobile-header">
+                <h1>₿ BITCOIN TIME MACHINE</h1>
+                <p>Historical Price Tracker</p>
+            </div>
+            <!-- ASCII Bitcoin Logo (hidden on mobile) -->
             <pre class="ascii-logo">
 ┌────────────────────────────────────────────────────────────────────────┐
 │                                                                        │
@@ -398,7 +568,7 @@
 
         <!-- Bitcoin Blockchain Blocks -->
         <section class="terminal-card">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4 section-header-mobile">
                 <div class="section-header" style="margin-bottom: 0;">
                     <span class="text-cyan">[BLOCK]</span> BITCOIN BLOCKCHAIN - <span id="timelineDate" class="text-amber"></span>
                 </div>
@@ -408,15 +578,17 @@
                     <span class="live-indicator text-xs">[LIVE]</span>
                 </div>
             </div>
-            <div id="blocksOverlay" class="blocks-overlay">
-                <!-- Blocks will be dynamically generated and positioned here -->
+            <div class="blocks-wrapper">
+                <div id="blocksOverlay" class="blocks-overlay">
+                    <!-- Blocks will be dynamically generated and positioned here -->
+                </div>
             </div>
             <p id="priceSource" class="text-dim text-xs text-center mt-2"></p>
         </section>
 
         <!-- Chart Section -->
         <section class="terminal-card">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4 section-header-mobile">
                 <div class="section-header" style="margin-bottom: 0;">
                     <span class="text-cyan">[CHART]</span> PRICE ON THIS DAY EACH YEAR
                 </div>
@@ -425,7 +597,7 @@
                     <button id="linearScaleBtn" onclick="setChartScale('linear')">LINEAR</button>
                 </div>
             </div>
-            <div class="relative h-80">
+            <div class="relative h-80 chart-container-mobile">
                 <canvas id="priceChart"></canvas>
             </div>
         </section>
@@ -454,9 +626,9 @@
 
         <!-- Footer -->
         <footer class="terminal-footer">
-            <pre class="divider">═══════════════════════════════════════════════════════════════════</pre>
-            <p>[ Data: Historical Bitcoin Price Data | CoinGecko API ]</p>
-            <p class="mt-1">[ Genesis Block: January 3, 2009 ]</p>
+            <div class="divider" style="overflow: hidden; text-overflow: clip;">═══════════════════════════════════════════════════════════════════</div>
+            <p>[ Data: Historical BTC Price | CoinGecko ]</p>
+            <p class="mt-1">[ Genesis: January 3, 2009 ]</p>
             <p class="text-xs mt-2" style="opacity: 0.7;">(C) 2026 BTC Time Machine</p>
         </footer>
     </div>
