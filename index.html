@@ -541,7 +541,7 @@
         <footer class="terminal-footer">
             <pre class="divider">═══════════════════════════════════════════════════════════════════</pre>
             <p>[ Data: Historical Bitcoin Price Data | CoinGecko API ]</p>
-            <p class="mt-1">[ Genesis Block: January 3, 2009</p>
+            <p class="mt-1">[ Genesis Block: January 3, 2009 ]</p>
             <p class="text-xs mt-2" style="opacity: 0.7;">(C) 2026 BTC Time Machine</p>
         </footer>
     </div>
@@ -649,8 +649,6 @@
                 }
             }
 
-            console.log('Parsed dates count:', Object.keys(data).length);
-            console.log('Sample dates:', Object.keys(data).slice(0, 5));
             return data;
         }
 
@@ -731,19 +729,6 @@
             if (value === null || value === undefined) return '-';
             const sign = value >= 0 ? '+' : '';
             return (includeSign ? sign : '') + Math.round(value).toLocaleString('en-US') + '%';
-        }
-
-        // Populate year selector
-        function populateYearSelector(data) {
-            const select = document.getElementById('purchaseYear');
-            select.innerHTML = '<option value="">Select a year...</option>';
-            
-            data.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.year;
-                option.textContent = item.year;
-                select.appendChild(option);
-            });
         }
 
         // Render table
@@ -929,28 +914,8 @@
             }
         }
 
-        // Generate a pseudo-hash based on year and price
-        function generateBlockHash(year, price) {
-            const hashInput = `${year}${price}`;
-            let hash = '';
-            for (let i = 0; i < 16; i++) {
-                const charCode = hashInput.charCodeAt(i % hashInput.length);
-                hash += ((charCode * (i + 1) * 997) % 16).toString(16);
-            }
-            return hash;
-        }
-
-        // Calculate approximate block height for a year
-        function calculateBlockHeight(year) {
-            // Bitcoin genesis block: Jan 3, 2009 (block 0)
-            // Approximate blocks per year: 52,560 (6 blocks/hour * 24 * 365)
-            const genesisYear = 2009;
-            const blocksPerYear = 52560;
-            const yearsSinceGenesis = year - genesisYear;
-            return Math.floor(yearsSinceGenesis * blocksPerYear);
-        }
-
         // Render timeline blocks aligned with chart - ANSI Style
+        // Blocks are displayed in reverse chronological order (newest first)
         function renderTimelineCards(data) {
             const container = document.getElementById('blocksOverlay');
             if (!container) return;
@@ -961,20 +926,6 @@
             }
 
             const monthAbbr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
-            // Block structure based on the exact template:
-            // ███████████████████╗       (line 1: top border)
-            // ██               ██║       (line 2: empty)
-            // ██  JAN. 03 '26  ██║       (line 3: date)
-            // ██               ██║       (line 4: empty)
-            // ██   $ 97,500    ██║ ████╗ (line 5: price + connector top)
-            // ██               ██║ ╚═══╝ (line 6: empty + connector bottom)
-            // ██    +45.23     ██║       (line 7: change)
-            // ██               ██║       (line 8: empty)
-            // ███████████████████║       (line 9: bottom border top)
-            // ╚══════════════════╝       (line 10: bottom border bottom)
-            //
-            // Each line is exactly 27 characters wide
 
             const INNER_WIDTH = 15; // Content area between ██ and ██║
 
@@ -989,14 +940,18 @@
                 return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
             }
 
-            // Render blocks in chronological order (matching chart x-axis)
-            const blocks = data.map((item, index) => {
-                const prevItem = index > 0 ? data[index - 1] : null;
+            // Reverse data for display (newest year first)
+            const reversedData = [...data].reverse();
+
+            // Render blocks in reverse chronological order (newest first)
+            const blocks = reversedData.map((item, index) => {
+                // For change calculation, compare to previous year (next item in reversed array)
+                const prevYearItem = index < reversedData.length - 1 ? reversedData[index + 1] : null;
                 let changePercent = null;
                 let changeClass = '';
 
-                if (prevItem) {
-                    changePercent = ((item.price - prevItem.price) / prevItem.price) * 100;
+                if (prevYearItem) {
+                    changePercent = ((item.price - prevYearItem.price) / prevYearItem.price) * 100;
                     changeClass = changePercent >= 0 ? 'ansi-block-change-positive' : 'ansi-block-change-negative';
                 }
 
@@ -1004,13 +959,13 @@
                 const isCurrentYear = item.year === todayYear;
                 const currentYearClass = isCurrentYear ? 'current-year' : '';
 
-                // Format date as "MON. DD 'YY" (exactly 12 chars)
+                // Format date as "MON. DD 'YY"
                 const dateStr = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
 
                 // Format price
                 const priceStr = `$ ${Math.round(item.price).toLocaleString('en-US')}`;
 
-                // Format change percentage
+                // Format change percentage (YoY change)
                 let changeStr;
                 if (changePercent === null) {
                     changeStr = '---';
@@ -1025,29 +980,23 @@
                 const priceLine = centerIn(priceStr, INNER_WIDTH);
                 const changeLine = centerIn(changeStr, INNER_WIDTH);
 
-                // Check if this is the last block (no connector)
-                const isLastBlock = index === data.length - 1;
+                // Last block in display (oldest year) has no connector
+                const isLastBlock = index === reversedData.length - 1;
 
                 // Trailing section - exactly 7 characters
-                const TRAIL = '       '; // 7 spaces
-                const CONN_TOP = ' ████╗ '; // 7 chars: space + 4 blocks + corner + space
-                const CONN_BOT = ' ╚═══╝ '; // 7 chars: space + corner + 3 lines + corner + space
+                const TRAIL = '       ';
+                const CONN_TOP = ' ████╗ ';
+                const CONN_BOT = ' ╚═══╝ ';
 
                 // Build lines using Unicode box-drawing characters
-                // Each line: 20 main chars + 7 trailing = 27 total
-                // Main block: ██ (2) + content (15) + ██║ (3) = 20 chars
                 const L1  = '███████████████████╗' + TRAIL;
                 const L2  = '██' + emptyLine + '██║' + TRAIL;
-                const L3  = '██' + dateLine + '██║' + TRAIL;
                 const L4  = '██' + emptyLine + '██║' + TRAIL;
-                const L5  = '██' + priceLine + '██║' + (isLastBlock ? TRAIL : CONN_TOP);
                 const L6  = '██' + emptyLine + '██║' + (isLastBlock ? TRAIL : CONN_BOT);
-                const L7  = '██' + changeLine + '██║' + TRAIL;
                 const L8  = '██' + emptyLine + '██║' + TRAIL;
                 const L9  = '███████████████████║' + TRAIL;
                 const L10 = '╚══════════════════╝' + TRAIL;
 
-                // Build with color spans - the spans wrap only the content, not the box chars
                 return `<div class="aligned-block ${currentYearClass}">${L1}
 ${L2}
 ██<span class="ansi-block-date">${dateLine}</span>██║${TRAIL}
@@ -1063,7 +1012,6 @@ ${L10}</div>`;
             container.innerHTML = blocks;
         }
 
-
         // Fetch current BTC price and add to todayData
         async function fetchCurrentPrice() {
             try {
@@ -1078,7 +1026,6 @@ ${L10}</div>`;
 
                 return currentPrice;
             } catch (error) {
-                console.error('Failed to fetch current price:', error);
                 document.getElementById('livePrice').textContent = 'Unable to fetch';
                 document.getElementById('priceSource').textContent = 'API unavailable';
                 return null;
@@ -1135,8 +1082,6 @@ ${L10}</div>`;
             // Look up price for the specific date
             const purchasePrice = historicalData[purchaseDateStr];
             if (!purchasePrice) {
-                console.log('Available dates:', Object.keys(historicalData).slice(0, 10));
-                console.log('Looking for:', purchaseDateStr);
                 alert(`No price data available for ${purchaseDateStr}.\n\nNote: Historical data may only be available for specific dates.\nTry selecting January 3rd or November 23rd of any year.`);
                 return;
             }
@@ -1215,23 +1160,19 @@ ${L10}</div>`;
                     const response = await fetch(filename);
                     if (response.ok) {
                         csvText = await response.text();
-                        console.log(`Successfully loaded: ${filename}`);
                         break;
                     }
                 } catch (e) {
-                    console.log(`Failed to load ${filename}`);
+                    // Continue to next filename
                 }
             }
-            
+
             // Use sample data if file not available
             if (!csvText) {
                 csvText = sampleHistoricalData;
-                console.log('Using sample historical data');
             }
-            
+
             historicalData = parseCSV(csvText);
-            console.log('Historical data entries:', Object.keys(historicalData).length);
-            console.log('Sample lookup test - 12/17/2025:', historicalData['12/17/2025']);
             todayData = filterTodayData(historicalData);
             todayData = calculateMetrics(todayData);
             
