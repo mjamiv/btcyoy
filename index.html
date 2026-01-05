@@ -167,58 +167,61 @@
             width: 100%;
             margin-bottom: 1rem;
             position: relative;
-            min-height: 100px;
+            min-height: 150px;
+            overflow-x: auto;
+            overflow-y: visible;
         }
 
-        /* Aligned Block Cards */
+        /* Aligned Block Cards - ANSI Style */
         .aligned-block {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
             font-family: var(--font-mono);
-            padding: 0.5rem;
-            min-width: 0;
-            max-width: 100px;
-            width: 100px;
-            text-align: center;
             position: absolute;
             transition: all 0.2s ease;
+            white-space: pre;
+            line-height: 1;
+            font-size: 0.5rem;
+            color: var(--text-primary);
         }
 
         .aligned-block:hover {
-            border-color: var(--border-active);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+            filter: brightness(1.2);
             transform: translateX(-50%) translateY(-2px);
-        }
-
-        .aligned-block .block-year {
-            color: var(--text-amber);
-            font-weight: bold;
-            font-size: 0.875rem;
-        }
-
-        .aligned-block .block-price {
-            color: var(--text-white);
-            font-size: 0.75rem;
-        }
-
-        .aligned-block .block-change {
-            font-size: 0.625rem;
         }
 
         /* Current Year Block */
         .aligned-block.current-year {
-            border-color: var(--btc-orange);
-            box-shadow: 0 0 15px rgba(247, 147, 26, 0.4);
+            color: var(--btc-orange);
             animation: terminal-pulse 2s ease-in-out infinite;
         }
 
         @keyframes terminal-pulse {
             0%, 100% {
-                box-shadow: 0 0 10px rgba(247, 147, 26, 0.4);
+                filter: brightness(1);
             }
             50% {
-                box-shadow: 0 0 20px rgba(247, 147, 26, 0.8);
+                filter: brightness(1.3);
             }
+        }
+
+        /* ANSI Block Elements */
+        .ansi-block-date {
+            color: var(--text-amber);
+        }
+
+        .ansi-block-price {
+            color: var(--text-white);
+        }
+
+        .ansi-block-change-positive {
+            color: var(--positive);
+        }
+
+        .ansi-block-change-negative {
+            color: var(--negative);
+        }
+
+        .ansi-block-connector {
+            color: var(--border-color);
         }
 
         /* Live Indicator */
@@ -231,29 +234,22 @@
             50% { opacity: 0; }
         }
 
-        /* Block Connectors */
-        .block-connector {
-            position: absolute;
-            height: 1px;
-            top: 50%;
-            z-index: 0;
-            pointer-events: none;
-            border-top: 1px dashed var(--border-color);
-        }
-
         /* Responsive Block Sizing */
         @media (max-width: 1024px) {
             .aligned-block {
-                max-width: 80px;
-                width: 80px;
+                font-size: 0.45rem;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
-                max-width: 65px;
-                width: 65px;
-                font-size: 0.75rem;
+                font-size: 0.4rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .aligned-block {
+                font-size: 0.35rem;
             }
         }
 
@@ -933,7 +929,7 @@
             return Math.floor(yearsSinceGenesis * blocksPerYear);
         }
 
-        // Render timeline blocks aligned with chart
+        // Render timeline blocks aligned with chart - ANSI Style
         function renderTimelineCards(data) {
             const container = document.getElementById('blocksOverlay');
             if (!container) return;
@@ -943,6 +939,8 @@
                 return;
             }
 
+            const monthAbbr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
             // Render blocks in chronological order (matching chart x-axis)
             const blocks = data.map((item, index) => {
                 const prevItem = index > 0 ? data[index - 1] : null;
@@ -951,30 +949,41 @@
 
                 if (prevItem) {
                     changePercent = ((item.price - prevItem.price) / prevItem.price) * 100;
-                    changeClass = changePercent >= 0 ? 'positive' : 'negative';
+                    changeClass = changePercent >= 0 ? 'ansi-block-change-positive' : 'ansi-block-change-negative';
                 }
 
                 // Highlight current year
                 const isCurrentYear = item.year === todayYear;
                 const currentYearClass = isCurrentYear ? 'current-year' : '';
-                const liveIndicator = isCurrentYear ? '<span class="live-indicator">*</span>' : '';
 
-                // ASCII-style change indicator
-                const changeArrow = changePercent !== null
-                    ? (changePercent >= 0 ? '^' : 'v')
-                    : '';
+                // Format date as "MON. DD 'YY"
+                const dateFormatted = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
+                const datePadded = dateFormatted.padEnd(15, ' ');
 
-                return `
-                    <div class="aligned-block ${currentYearClass}" style="z-index: 1;">
-                        <div class="block-year">${item.year}${liveIndicator}</div>
-                        <div class="block-price">$${Math.round(item.price).toLocaleString('en-US')}</div>
-                        ${changePercent !== null ? `
-                            <div class="block-change ${changeClass}">
-                                ${changeArrow}${Math.abs(changePercent).toFixed(0)}%
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
+                // Format price
+                const priceFormatted = `$ ${Math.round(item.price).toLocaleString('en-US')}`;
+                const pricePadded = priceFormatted.padEnd(15, ' ');
+
+                // Format change percentage
+                const changeSign = changePercent === null ? '' : (changePercent >= 0 ? '+' : '-');
+                const changeValue = changePercent === null ? '---' : `${changeSign}${Math.abs(changePercent).toFixed(2)}`;
+                const changePadded = changeValue.padEnd(15, ' ');
+
+                // Check if this is the last block (no connector)
+                const isLastBlock = index === data.length - 1;
+                const connector = isLastBlock ? '       ' : ' ████╗ ';
+                const connectorBottom = isLastBlock ? '       ' : ' ╚═══╝ ';
+
+                return `<div class="aligned-block ${currentYearClass}" style="z-index: 1;">███████████████████╗${connector}
+██               ██║${connector}
+██ <span class="ansi-block-date">${datePadded}</span>██║${connector}
+██               ██║${connector}
+██ <span class="ansi-block-price">${pricePadded}</span>██║${connector}
+██               ██║${connector}
+██ <span class="${changeClass}">${changePadded}</span>██║${connector}
+██               ██║${connector}
+███████████████████║${connector}
+╚══════════════════╝${connectorBottom}</div>`;
             }).join('');
 
             container.innerHTML = blocks;
@@ -996,37 +1005,16 @@
             const blocksContainer = document.getElementById('blocksOverlay');
             if (!blocksContainer) return;
 
-            // Remove existing connectors
-            blocksContainer.querySelectorAll('.block-connector').forEach(el => el.remove());
-
             const blockElements = blocksContainer.querySelectorAll('.aligned-block');
-            const positions = [];
 
             // Position each block at the exact pixel position of its data point
             blockElements.forEach((block, index) => {
                 const pixelX = xScale.getPixelForValue(index);
-                positions.push(pixelX);
 
                 // Center the block at the data point by using transform
                 block.style.left = `${pixelX}px`;
                 block.style.transform = 'translateX(-50%)';
             });
-
-            // Create connecting lines between blocks
-            // Each block is 90px wide (or responsive width) and centered with translateX(-50%)
-            // So block extends 45px left and 45px right from its center position
-            for (let i = 0; i < positions.length - 1; i++) {
-                const blockWidth = 90; // Default desktop width
-                const halfWidth = blockWidth / 2;
-
-                const connector = document.createElement('div');
-                connector.className = 'block-connector';
-                // Line starts at right edge of current block
-                connector.style.left = `${positions[i] + halfWidth}px`;
-                // Line width is distance minus the two half-widths
-                connector.style.width = `${positions[i + 1] - positions[i] - blockWidth}px`;
-                blocksContainer.appendChild(connector);
-            }
         }
 
         // Setup window resize handler for maintaining block-chart alignment
