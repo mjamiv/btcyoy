@@ -179,9 +179,10 @@
             vertical-align: top;
             transition: all 0.2s ease;
             white-space: pre;
-            line-height: 1;
-            font-size: 0.5rem;
+            line-height: 1.1;
+            font-size: 0.65rem;
             color: var(--text-primary);
+            letter-spacing: 0;
         }
 
         .aligned-block:hover {
@@ -237,19 +238,19 @@
         /* Responsive Block Sizing */
         @media (max-width: 1024px) {
             .aligned-block {
-                font-size: 0.45rem;
+                font-size: 0.55rem;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
-                font-size: 0.4rem;
+                font-size: 0.5rem;
             }
         }
 
         @media (max-width: 640px) {
             .aligned-block {
-                font-size: 0.35rem;
+                font-size: 0.45rem;
             }
         }
 
@@ -971,11 +972,11 @@
 
                 return `<div class="aligned-block ${currentYearClass}">███████████████████╗${spacer}
 ██               ██║${spacer}
-██ <span class="ansi-block-date">${datePadded}</span>██║${spacer}
+██ <span class="ansi-block-date">${datePadded}</span> ██║${spacer}
 ██               ██║${spacer}
-██ <span class="ansi-block-price">${pricePadded}</span>██║${connectorLine5}
+██ <span class="ansi-block-price">${pricePadded}</span> ██║${connectorLine5}
 ██               ██║${connectorLine6}
-██ <span class="${changeClass}">${changePadded}</span>██║${spacer}
+██ <span class="${changeClass}">${changePadded}</span> ██║${spacer}
 ██               ██║${spacer}
 ███████████████████║${spacer}
 ╚══════════════════╝${spacer}</div>`;
