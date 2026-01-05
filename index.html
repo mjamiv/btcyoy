@@ -167,22 +167,37 @@
             width: 100%;
             margin-bottom: 1rem;
             position: relative;
-            min-height: 150px;
+            min-height: 180px;
             overflow-x: auto;
             overflow-y: visible;
+            white-space: nowrap;
+            font-size: 0; /* Eliminate gaps between inline-blocks */
         }
 
         /* Aligned Block Cards - ANSI Style */
         .aligned-block {
-            font-family: var(--font-mono);
+            /* Use Menlo/Monaco for Mac, Consolas for Windows - these have good box-drawing support */
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
             display: inline-block;
             vertical-align: top;
             transition: all 0.2s ease;
             white-space: pre;
-            line-height: 1.1;
-            font-size: 0.65rem;
+            line-height: 1.2;
+            font-size: 11px;
             color: var(--text-primary);
             letter-spacing: 0;
+            word-spacing: 0;
+            font-variant-ligatures: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: geometricPrecision;
+            /* Ensure consistent character width */
+            font-feature-settings: "tnum" 1;
+            /* Reset any inherited margins/padding */
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
         }
 
         .aligned-block:hover {
@@ -204,7 +219,18 @@
             }
         }
 
-        /* ANSI Block Elements */
+        /* ANSI Block Elements - inherit font properties to maintain alignment */
+        .ansi-block-date,
+        .ansi-block-price,
+        .ansi-block-change-positive,
+        .ansi-block-change-negative,
+        .ansi-block-connector {
+            font-family: inherit;
+            font-size: inherit;
+            letter-spacing: inherit;
+            display: inline;
+        }
+
         .ansi-block-date {
             color: var(--text-amber);
         }
@@ -238,19 +264,19 @@
         /* Responsive Block Sizing */
         @media (max-width: 1024px) {
             .aligned-block {
-                font-size: 0.55rem;
+                font-size: 10px;
             }
         }
 
         @media (max-width: 768px) {
             .aligned-block {
-                font-size: 0.5rem;
+                font-size: 9px;
             }
         }
 
         @media (max-width: 640px) {
             .aligned-block {
-                font-size: 0.45rem;
+                font-size: 8px;
             }
         }
 
@@ -936,6 +962,33 @@
 
             const monthAbbr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
+            // Block structure based on the exact template:
+            // ███████████████████╗       (line 1: top border)
+            // ██               ██║       (line 2: empty)
+            // ██  JAN. 03 '26  ██║       (line 3: date)
+            // ██               ██║       (line 4: empty)
+            // ██   $ 97,500    ██║ ████╗ (line 5: price + connector top)
+            // ██               ██║ ╚═══╝ (line 6: empty + connector bottom)
+            // ██    +45.23     ██║       (line 7: change)
+            // ██               ██║       (line 8: empty)
+            // ███████████████████║       (line 9: bottom border top)
+            // ╚══════════════════╝       (line 10: bottom border bottom)
+            //
+            // Each line is exactly 27 characters wide
+
+            const INNER_WIDTH = 15; // Content area between ██ and ██║
+
+            // Helper to center content in given width
+            function centerIn(str, width) {
+                if (str.length >= width) {
+                    return str.substring(0, width);
+                }
+                const totalPad = width - str.length;
+                const leftPad = Math.floor(totalPad / 2);
+                const rightPad = totalPad - leftPad;
+                return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
+            }
+
             // Render blocks in chronological order (matching chart x-axis)
             const blocks = data.map((item, index) => {
                 const prevItem = index > 0 ? data[index - 1] : null;
@@ -951,35 +1004,60 @@
                 const isCurrentYear = item.year === todayYear;
                 const currentYearClass = isCurrentYear ? 'current-year' : '';
 
-                // Format date as "MON. DD 'YY"
-                const dateFormatted = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
-                const datePadded = dateFormatted.padEnd(15, ' ');
+                // Format date as "MON. DD 'YY" (exactly 12 chars)
+                const dateStr = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
 
                 // Format price
-                const priceFormatted = `$ ${Math.round(item.price).toLocaleString('en-US')}`;
-                const pricePadded = priceFormatted.padEnd(15, ' ');
+                const priceStr = `$ ${Math.round(item.price).toLocaleString('en-US')}`;
 
                 // Format change percentage
-                const changeSign = changePercent === null ? '' : (changePercent >= 0 ? '+' : '-');
-                const changeValue = changePercent === null ? '---' : `${changeSign}${Math.abs(changePercent).toFixed(2)}`;
-                const changePadded = changeValue.padEnd(15, ' ');
+                let changeStr;
+                if (changePercent === null) {
+                    changeStr = '---';
+                } else {
+                    const sign = changePercent >= 0 ? '+' : '-';
+                    changeStr = `${sign}${Math.abs(changePercent).toFixed(2)}`;
+                }
+
+                // Center all content in the inner width
+                const emptyLine = ' '.repeat(INNER_WIDTH);
+                const dateLine = centerIn(dateStr, INNER_WIDTH);
+                const priceLine = centerIn(priceStr, INNER_WIDTH);
+                const changeLine = centerIn(changeStr, INNER_WIDTH);
 
                 // Check if this is the last block (no connector)
                 const isLastBlock = index === data.length - 1;
-                const connectorLine5 = isLastBlock ? '' : ' ████╗';
-                const connectorLine6 = isLastBlock ? '' : ' ╚═══╝';
-                const spacer = isLastBlock ? '' : ' ';
 
-                return `<div class="aligned-block ${currentYearClass}">███████████████████╗${spacer}
-██               ██║${spacer}
-██ <span class="ansi-block-date">${datePadded}</span> ██║${spacer}
-██               ██║${spacer}
-██ <span class="ansi-block-price">${pricePadded}</span> ██║${connectorLine5}
-██               ██║${connectorLine6}
-██ <span class="${changeClass}">${changePadded}</span> ██║${spacer}
-██               ██║${spacer}
-███████████████████║${spacer}
-╚══════════════════╝${spacer}</div>`;
+                // Trailing section - exactly 7 characters
+                const TRAIL = '       '; // 7 spaces
+                const CONN_TOP = ' ████╗ '; // 7 chars: space + 4 blocks + corner + space
+                const CONN_BOT = ' ╚═══╝ '; // 7 chars: space + corner + 3 lines + corner + space
+
+                // Build lines using Unicode box-drawing characters
+                // Each line: 20 main chars + 7 trailing = 27 total
+                // Main block: ██ (2) + content (15) + ██║ (3) = 20 chars
+                const L1  = '███████████████████╗' + TRAIL;
+                const L2  = '██' + emptyLine + '██║' + TRAIL;
+                const L3  = '██' + dateLine + '██║' + TRAIL;
+                const L4  = '██' + emptyLine + '██║' + TRAIL;
+                const L5  = '██' + priceLine + '██║' + (isLastBlock ? TRAIL : CONN_TOP);
+                const L6  = '██' + emptyLine + '██║' + (isLastBlock ? TRAIL : CONN_BOT);
+                const L7  = '██' + changeLine + '██║' + TRAIL;
+                const L8  = '██' + emptyLine + '██║' + TRAIL;
+                const L9  = '███████████████████║' + TRAIL;
+                const L10 = '╚══════════════════╝' + TRAIL;
+
+                // Build with color spans - the spans wrap only the content, not the box chars
+                return `<div class="aligned-block ${currentYearClass}">${L1}
+${L2}
+██<span class="ansi-block-date">${dateLine}</span>██║${TRAIL}
+${L4}
+██<span class="ansi-block-price">${priceLine}</span>██║${isLastBlock ? TRAIL : CONN_TOP}
+${L6}
+██<span class="${changeClass}">${changeLine}</span>██║${TRAIL}
+${L8}
+${L9}
+${L10}</div>`;
             }).join('');
 
             container.innerHTML = blocks;
