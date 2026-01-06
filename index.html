@@ -1086,12 +1086,26 @@ ${L10}</div>`;
 
         // Add current year's price to the dataset
         function addCurrentYearToData() {
-            if (!currentPrice || !todayData) return;
+            // Return early if no price available or no data array
+            if (!todayData || !Array.isArray(todayData)) {
+                console.warn('Cannot add current year: todayData is not initialized');
+                return;
+            }
+
+            // Use current price if available, otherwise skip adding current year
+            if (!currentPrice) {
+                console.warn('Cannot add current year: currentPrice not available');
+                return;
+            }
 
             // Check if current year already exists in data
-            const currentYearExists = todayData.some(item => item.year === todayYear);
+            const currentYearIndex = todayData.findIndex(item => item.year === todayYear);
 
-            if (!currentYearExists) {
+            if (currentYearIndex >= 0) {
+                // Update existing entry with latest price
+                todayData[currentYearIndex].price = currentPrice;
+                console.log(`Updated ${todayYear} price to ${currentPrice}`);
+            } else {
                 // Add current year with live price
                 const dateStr = `${todayMonth.toString().padStart(2, '0')}/${todayDay.toString().padStart(2, '0')}/${todayYear}`;
                 todayData.push({
@@ -1099,13 +1113,19 @@ ${L10}</div>`;
                     year: todayYear,
                     price: currentPrice
                 });
-
-                // Sort by year
-                todayData.sort((a, b) => a.year - b.year);
-
-                // Recalculate metrics
-                todayData = calculateMetrics(todayData);
+                console.log(`Added ${todayYear} with price ${currentPrice}`);
             }
+
+            // Sort by year
+            todayData.sort((a, b) => a.year - b.year);
+
+            // Recalculate metrics
+            todayData = calculateMetrics(todayData);
+
+            // CRITICAL: Re-render all views to show current year
+            renderTimelineCards(todayData);
+            renderTable(todayData);
+            renderChart(todayData);
         }
 
         // Load data from CSV file or use sample data
