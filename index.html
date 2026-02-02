@@ -401,6 +401,137 @@
             }
         }
 
+        /* My Genesis Block */
+        .aligned-block.my-genesis {
+            color: #ff00ff;
+            filter: brightness(1.1);
+        }
+
+        .aligned-block.my-genesis .ansi-block-date {
+            color: #ff00ff;
+        }
+
+        .aligned-block.my-genesis .ansi-block-label {
+            color: #ff00ff;
+            font-size: inherit;
+        }
+
+        /* My Genesis Input Section */
+        .my-genesis-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .my-genesis-input label {
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .my-genesis-input input[type="date"] {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: #ff00ff;
+            font-family: var(--font-mono);
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            text-align: center;
+            min-width: 180px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .my-genesis-input input[type="date"]:hover {
+            border-color: #ff00ff;
+        }
+
+        .my-genesis-input input[type="date"]:focus {
+            outline: none;
+            border-color: #ff00ff;
+            box-shadow: 0 0 0 1px #ff00ff, 0 0 10px rgba(255, 0, 255, 0.3);
+        }
+
+        /* Style the date picker icon */
+        .my-genesis-input input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .my-genesis-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        .my-genesis-input .clear-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.625rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.15s ease;
+        }
+
+        .my-genesis-input .clear-btn:hover {
+            border-color: var(--negative);
+            color: var(--negative);
+        }
+
+        /* My Genesis table row */
+        .terminal-table tbody tr.my-genesis-row {
+            background-color: rgba(255, 0, 255, 0.1);
+            border-left: 2px solid #ff00ff;
+        }
+
+        .terminal-table tbody tr.my-genesis-row td {
+            color: #ff00ff;
+        }
+
+        .terminal-table tbody tr.my-genesis-row .positive {
+            color: var(--positive);
+        }
+
+        .terminal-table tbody tr.my-genesis-row .negative {
+            color: var(--negative);
+        }
+
+        /* My Genesis Return column */
+        .my-genesis-return {
+            color: #ff00ff !important;
+        }
+
+        /* Hide desktop My Genesis input on mobile */
+        @media (max-width: 768px) {
+            .ascii-logo + .my-genesis-input {
+                display: none;
+            }
+
+            .my-genesis-input {
+                padding: 0.75rem 0;
+            }
+
+            .my-genesis-input input[type="date"] {
+                min-width: 160px;
+                font-size: 0.75rem;
+                padding: 0.375rem 0.75rem;
+            }
+        }
+
+        /* Hide mobile My Genesis input on desktop */
+        @media (min-width: 769px) {
+            .mobile-header .my-genesis-input {
+                display: none;
+            }
+        }
+
         /* Terminal Table */
         .terminal-table {
             width: 100%;
@@ -530,6 +661,14 @@
             <div class="mobile-header">
                 <h1>₿ BITCOIN TIME MACHINE</h1>
                 <p>Historical Price Tracker</p>
+                <!-- My Genesis Input (Mobile) -->
+                <div class="my-genesis-input" style="margin-top: 0.75rem;">
+                    <label for="myGenesisDateMobile">Enter your Bitcoin genesis date</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="date" id="myGenesisDateMobile" onchange="handleMyGenesisChangeMobile()" />
+                        <button class="clear-btn" onclick="clearMyGenesis()" id="clearGenesisBtnMobile" style="display: none;">Clear</button>
+                    </div>
+                </div>
             </div>
             <!-- ASCII Bitcoin Logo (hidden on mobile) -->
             <pre class="ascii-logo">
@@ -563,6 +702,14 @@
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
 </pre>
+            <!-- My Genesis Input -->
+            <div class="my-genesis-input">
+                <label for="myGenesisDate">Enter your Bitcoin genesis date</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="date" id="myGenesisDate" onchange="handleMyGenesisChange()" />
+                    <button class="clear-btn" onclick="clearMyGenesis()" id="clearGenesisBtn" style="display: none;">Clear</button>
+                </div>
+            </div>
         </header>
 
         <!-- Bitcoin Blockchain Blocks -->
@@ -613,11 +760,12 @@
                             <th class="text-left">DATE</th>
                             <th class="text-right">BTC/USD</th>
                             <th class="text-right">GENESIS RETURN</th>
+                            <th class="text-right my-genesis-return" id="myGenesisHeader" style="display: none;">MY GENESIS RETURN</th>
                             <th class="text-right">5YR CAGR</th>
                         </tr>
                     </thead>
                     <tbody id="priceTableBody">
-                        <tr><td colspan="4" class="text-center py-8 text-dim">[ Loading data... ]</td></tr>
+                        <tr><td colspan="5" class="text-center py-8 text-dim">[ Loading data... ]</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -671,6 +819,7 @@
         let chart = null;
         let currentPrice = null;
         let chartScaleType = 'logarithmic';
+        let myGenesisData = null; // Stores { date, year, month, day, price } for My Genesis
 
         // Get today's month and day
         const today = new Date();
@@ -811,24 +960,47 @@
         // Render table
         function renderTable(data) {
             const tbody = document.getElementById('priceTableBody');
+            const colSpan = myGenesisData ? 5 : 4;
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-dim">[ No data available ]</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-8 text-dim">[ No data available ]</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.map(item => {
+            // Prepare data with My Genesis entry if applicable
+            let tableData = [...data];
+            let myGenesisInData = false;
+
+            // Check if My Genesis date falls on today's month/day
+            if (myGenesisData) {
+                const myGenesisOnToday = myGenesisData.month === todayMonth && myGenesisData.day === todayDay;
+                if (myGenesisOnToday) {
+                    // Check if My Genesis year is already in the data
+                    myGenesisInData = tableData.some(item => item.year === myGenesisData.year);
+                }
+            }
+
+            tbody.innerHTML = tableData.map(item => {
                 const returnClass = item.returnSinceGenesis >= 0 ? 'positive' : 'negative';
                 const cagrClass = item.cagr5Year !== null && item.cagr5Year >= 0 ? 'positive' : 'negative';
                 const isCurrentYear = item.year === todayYear;
-                const rowClass = isCurrentYear ? 'current-row' : '';
+                let rowClass = isCurrentYear ? 'current-row' : '';
                 const liveTag = isCurrentYear ? ' <span class="live-indicator">[LIVE]</span>' : '';
+
+                // Calculate My Genesis return
+                let myGenesisReturnCell = '';
+                if (myGenesisData) {
+                    const myGenesisReturn = calculateMyGenesisReturn(item.price);
+                    const myGenesisClass = myGenesisReturn !== null && myGenesisReturn >= 0 ? 'positive' : 'negative';
+                    myGenesisReturnCell = `<td class="text-right ${myGenesisClass}">${myGenesisReturn !== null ? formatPercentTable(myGenesisReturn) : '---'}</td>`;
+                }
 
                 return `
                     <tr class="${rowClass}">
                         <td>${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}${liveTag}</td>
                         <td class="text-right text-amber">${formatCurrencyTable(item.price)}</td>
                         <td class="text-right ${returnClass}">${formatPercentTable(item.returnSinceGenesis)}</td>
+                        ${myGenesisReturnCell}
                         <td class="text-right ${cagrClass}">${item.cagr5Year !== null ? formatPercentTable(item.cagr5Year) : '---'}</td>
                     </tr>
                 `;
@@ -843,8 +1015,55 @@
                 chart.destroy();
             }
 
-            const labels = data.map(d => d.year.toString());
-            const prices = data.map(d => d.price);
+            // Prepare chart data - potentially including My Genesis point
+            let chartData = [...data];
+
+            // Add My Genesis point if user has set a genesis date
+            if (myGenesisData) {
+                // Check if this year already exists
+                const existingIndex = chartData.findIndex(item => item.year === myGenesisData.year);
+
+                if (existingIndex === -1) {
+                    // Add My Genesis as a new entry (different year)
+                    const dayOfYear = Math.floor((new Date(myGenesisData.year, myGenesisData.month - 1, myGenesisData.day) - new Date(myGenesisData.year, 0, 0)) / (1000 * 60 * 60 * 24));
+                    chartData.push({
+                        date: myGenesisData.date,
+                        year: myGenesisData.year,
+                        sortYear: myGenesisData.year + (dayOfYear / 366),
+                        price: myGenesisData.price,
+                        isMyGenesis: true
+                    });
+                    // Sort by sortYear or year
+                    chartData.sort((a, b) => (a.sortYear || a.year) - (b.sortYear || b.year));
+                } else {
+                    // Same year exists - check if it's the same date
+                    const existingOnSameDate = myGenesisData.month === todayMonth && myGenesisData.day === todayDay;
+                    if (existingOnSameDate) {
+                        // Mark existing entry as My Genesis (same date)
+                        chartData[existingIndex].isMyGenesis = true;
+                    } else {
+                        // Different date in same year - add as separate point
+                        const dayOfYear = Math.floor((new Date(myGenesisData.year, myGenesisData.month - 1, myGenesisData.day) - new Date(myGenesisData.year, 0, 0)) / (1000 * 60 * 60 * 24));
+                        chartData.push({
+                            date: myGenesisData.date,
+                            year: myGenesisData.year,
+                            sortYear: myGenesisData.year + (dayOfYear / 366),
+                            price: myGenesisData.price,
+                            isMyGenesis: true
+                        });
+                        // Sort by sortYear or year
+                        chartData.sort((a, b) => (a.sortYear || a.year) - (b.sortYear || b.year));
+                    }
+                }
+            }
+
+            const labels = chartData.map(d => d.year.toString());
+            const prices = chartData.map(d => d.price);
+
+            // Create point colors array - magenta for My Genesis, orange for others
+            const pointBackgroundColors = chartData.map(d => d.isMyGenesis ? '#ff00ff' : '#f7931a');
+            const pointBorderColors = chartData.map(d => d.isMyGenesis ? '#ff00ff' : '#0a0a0a');
+            const pointRadii = chartData.map(d => d.isMyGenesis ? 8 : 4);
 
             chart = new Chart(ctx, {
                 type: 'line',
@@ -858,10 +1077,10 @@
                         borderWidth: 2,
                         fill: true,
                         tension: 0,  // Angular lines for terminal aesthetic
-                        pointBackgroundColor: '#f7931a',
-                        pointBorderColor: '#0a0a0a',
+                        pointBackgroundColor: pointBackgroundColors,
+                        pointBorderColor: pointBorderColors,
                         pointBorderWidth: 2,
-                        pointRadius: 4,
+                        pointRadius: pointRadii,
                         pointHoverRadius: 6,
                         pointStyle: 'rect'  // Square points like terminal
                     }]
@@ -891,7 +1110,10 @@
                             },
                             callbacks: {
                                 title: function(context) {
-                                    return '[ ' + context[0].label + ' ]';
+                                    const dataIndex = context[0].dataIndex;
+                                    const isMyGenesis = chartData[dataIndex] && chartData[dataIndex].isMyGenesis;
+                                    const label = isMyGenesis ? '[ MY GENESIS ' + context[0].label + ' ]' : '[ ' + context[0].label + ' ]';
+                                    return label;
                                 },
                                 label: function(context) {
                                     return '> ' + formatCurrency(context.raw);
@@ -990,8 +1212,57 @@
                 return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
             }
 
+            // Prepare display data - potentially including My Genesis block
+            let displayData = [...data];
+
+            // Add My Genesis block if user has set a genesis date
+            if (myGenesisData) {
+                // Always add My Genesis block - it represents the user's personal Bitcoin genesis
+                // Create a combined key for year comparison that handles same-year different dates
+                const myGenesisKey = `${myGenesisData.year}-${myGenesisData.month}-${myGenesisData.day}`;
+
+                // Check if we already have data for this exact year
+                const existingIndex = displayData.findIndex(item => item.year === myGenesisData.year);
+
+                if (existingIndex === -1) {
+                    // Add My Genesis as a new entry (different year)
+                    displayData.push({
+                        date: myGenesisData.date,
+                        year: myGenesisData.year,
+                        month: myGenesisData.month,
+                        day: myGenesisData.day,
+                        price: myGenesisData.price,
+                        isMyGenesis: true
+                    });
+                    // Sort by year
+                    displayData.sort((a, b) => a.year - b.year);
+                } else {
+                    // Same year exists - check if it's the same date
+                    const existingOnSameDate = myGenesisData.month === todayMonth && myGenesisData.day === todayDay;
+                    if (existingOnSameDate) {
+                        // Mark existing entry as My Genesis (same date)
+                        displayData[existingIndex].isMyGenesis = true;
+                    } else {
+                        // Different date in same year - insert My Genesis as separate block
+                        // We'll use a decimal year for sorting to place it correctly
+                        const dayOfYear = Math.floor((new Date(myGenesisData.year, myGenesisData.month - 1, myGenesisData.day) - new Date(myGenesisData.year, 0, 0)) / (1000 * 60 * 60 * 24));
+                        displayData.push({
+                            date: myGenesisData.date,
+                            year: myGenesisData.year,
+                            sortYear: myGenesisData.year + (dayOfYear / 366), // For proper chronological sorting
+                            month: myGenesisData.month,
+                            day: myGenesisData.day,
+                            price: myGenesisData.price,
+                            isMyGenesis: true
+                        });
+                        // Sort by sortYear or year
+                        displayData.sort((a, b) => (a.sortYear || a.year) - (b.sortYear || b.year));
+                    }
+                }
+            }
+
             // Reverse data for display (newest year first)
-            const reversedData = [...data].reverse();
+            const reversedData = [...displayData].reverse();
 
             // Render blocks in reverse chronological order (newest first)
             const blocks = reversedData.map((item, index) => {
@@ -1007,10 +1278,24 @@
 
                 // Highlight current year
                 const isCurrentYear = item.year === todayYear;
-                const currentYearClass = isCurrentYear ? 'current-year' : '';
+                const isMyGenesis = item.isMyGenesis === true;
+                let blockClass = '';
+                if (isMyGenesis) {
+                    blockClass = 'my-genesis';
+                } else if (isCurrentYear) {
+                    blockClass = 'current-year';
+                }
 
-                // Format date as "MON. DD 'YY"
-                const dateStr = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
+                // Format date as "MON. DD 'YY" or "MY GENESIS" label
+                let dateStr;
+                if (isMyGenesis) {
+                    // Show actual My Genesis date
+                    const mgMonth = item.month || myGenesisData.month;
+                    const mgDay = item.day || myGenesisData.day;
+                    dateStr = `${monthAbbr[mgMonth - 1]}. ${mgDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
+                } else {
+                    dateStr = `${monthAbbr[todayMonth - 1]}. ${todayDay.toString().padStart(2, '0')} '${item.year.toString().slice(-2)}`;
+                }
 
                 // Format price
                 const priceStr = `$ ${Math.round(item.price).toLocaleString('en-US')}`;
@@ -1030,6 +1315,9 @@
                 const priceLine = centerIn(priceStr, INNER_WIDTH);
                 const changeLine = centerIn(changeStr, INNER_WIDTH);
 
+                // My Genesis label line (shown on line 2)
+                const genesisLabel = isMyGenesis ? centerIn('MY GENESIS', INNER_WIDTH) : emptyLine;
+
                 // Last block in display (oldest year) has no connector
                 const isLastBlock = index === reversedData.length - 1;
 
@@ -1040,16 +1328,23 @@
 
                 // Build lines using Unicode box-drawing characters
                 const L1  = '███████████████████╗' + TRAIL;
-                const L2  = '██' + emptyLine + '██║' + TRAIL;
                 const L4  = '██' + emptyLine + '██║' + TRAIL;
                 const L6  = '██' + emptyLine + '██║' + (isLastBlock ? TRAIL : CONN_BOT);
                 const L8  = '██' + emptyLine + '██║' + TRAIL;
                 const L9  = '███████████████████║' + TRAIL;
                 const L10 = '╚══════════════════╝' + TRAIL;
 
-                return `<div class="aligned-block ${currentYearClass}">${L1}
+                // Use appropriate color class for date
+                const dateClass = isMyGenesis ? 'ansi-block-label' : 'ansi-block-date';
+
+                // Line 2 shows label for My Genesis, empty for others
+                const L2 = isMyGenesis
+                    ? '██<span class="ansi-block-label">' + genesisLabel + '</span>██║' + TRAIL
+                    : '██' + emptyLine + '██║' + TRAIL;
+
+                return `<div class="aligned-block ${blockClass}">${L1}
 ${L2}
-██<span class="ansi-block-date">${dateLine}</span>██║${TRAIL}
+██<span class="${dateClass}">${dateLine}</span>██║${TRAIL}
 ${L4}
 ██<span class="ansi-block-price">${priceLine}</span>██║${isLastBlock ? TRAIL : CONN_TOP}
 ${L6}
@@ -1183,8 +1478,156 @@ ${L10}</div>`;
             renderChart(todayData);
         }
 
+        // Handle My Genesis date change
+        function handleMyGenesisChange() {
+            const dateInput = document.getElementById('myGenesisDate');
+            const mobileInput = document.getElementById('myGenesisDateMobile');
+
+            // Sync with mobile input
+            if (mobileInput) {
+                mobileInput.value = dateInput.value;
+            }
+
+            processMyGenesis(dateInput.value);
+        }
+
+        // Handle My Genesis date change (mobile)
+        function handleMyGenesisChangeMobile() {
+            const mobileInput = document.getElementById('myGenesisDateMobile');
+            const desktopInput = document.getElementById('myGenesisDate');
+
+            // Sync with desktop input
+            if (desktopInput) {
+                desktopInput.value = mobileInput.value;
+            }
+
+            processMyGenesis(mobileInput.value);
+        }
+
+        // Process My Genesis date
+        function processMyGenesis(dateValue) {
+            if (!dateValue) {
+                clearMyGenesis();
+                return;
+            }
+
+            // Parse the date (YYYY-MM-DD format from input)
+            const parts = dateValue.split('-');
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const day = parseInt(parts[2]);
+
+            // Create MM/DD/YYYY format to match CSV data
+            const dateStr = `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}/${year}`;
+
+            // Look up price in historical data
+            let price = historicalData[dateStr];
+
+            // If exact date not found, try to find closest available date
+            if (!price) {
+                // Try to find any data for that year on the same month/day pattern
+                const pattern = `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}/`;
+                for (const [date, p] of Object.entries(historicalData)) {
+                    if (date.startsWith(pattern)) {
+                        // Found data for this day in another year
+                        break;
+                    }
+                }
+
+                // If still no price, show a message but still create the genesis point
+                // Use interpolation or show as unavailable
+                if (!price) {
+                    // Find the closest date we have data for
+                    const inputDate = new Date(year, month - 1, day);
+                    let closestDate = null;
+                    let closestDiff = Infinity;
+
+                    for (const [dateKey, p] of Object.entries(historicalData)) {
+                        const dateParts = dateKey.split('/');
+                        const dataDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]));
+                        const diff = Math.abs(dataDate - inputDate);
+                        if (diff < closestDiff) {
+                            closestDiff = diff;
+                            closestDate = dateKey;
+                            price = p;
+                        }
+                    }
+                }
+            }
+
+            if (!price) {
+                alert('No price data available for this date or nearby dates.');
+                clearMyGenesis();
+                return;
+            }
+
+            // Store My Genesis data
+            myGenesisData = {
+                date: dateStr,
+                year: year,
+                month: month,
+                day: day,
+                price: price,
+                inputValue: dateValue
+            };
+
+            // Show clear buttons
+            document.getElementById('clearGenesisBtn').style.display = 'inline-block';
+            const mobileClearBtn = document.getElementById('clearGenesisBtnMobile');
+            if (mobileClearBtn) mobileClearBtn.style.display = 'inline-block';
+
+            // Show My Genesis Return column
+            document.getElementById('myGenesisHeader').style.display = '';
+            document.getElementById('myGenesisHeader').style.color = '#ff00ff';
+
+            // Re-render all views
+            renderAllViews();
+        }
+
+        // Clear My Genesis
+        function clearMyGenesis() {
+            myGenesisData = null;
+
+            // Clear inputs
+            document.getElementById('myGenesisDate').value = '';
+            const mobileInput = document.getElementById('myGenesisDateMobile');
+            if (mobileInput) mobileInput.value = '';
+
+            // Hide clear buttons
+            document.getElementById('clearGenesisBtn').style.display = 'none';
+            const mobileClearBtn = document.getElementById('clearGenesisBtnMobile');
+            if (mobileClearBtn) mobileClearBtn.style.display = 'none';
+
+            // Hide My Genesis Return column
+            document.getElementById('myGenesisHeader').style.display = 'none';
+
+            // Re-render all views
+            renderAllViews();
+        }
+
+        // Render all views
+        function renderAllViews() {
+            if (todayData && todayData.length > 0) {
+                renderTimelineCards(todayData);
+                renderTable(todayData);
+                renderChart(todayData);
+            }
+        }
+
+        // Calculate My Genesis return for a given price
+        function calculateMyGenesisReturn(price) {
+            if (!myGenesisData || !myGenesisData.price) return null;
+            return ((price - myGenesisData.price) / myGenesisData.price) * 100;
+        }
+
         // Initialize
         async function init() {
+            // Set max date for My Genesis input to today
+            const todayStr = `${todayYear}-${todayMonth.toString().padStart(2, '0')}-${todayDay.toString().padStart(2, '0')}`;
+            document.getElementById('myGenesisDate').max = todayStr;
+            const mobileInput = document.getElementById('myGenesisDateMobile');
+            if (mobileInput) mobileInput.max = todayStr;
+
             await loadData();
             await fetchCurrentPrice();
         }
