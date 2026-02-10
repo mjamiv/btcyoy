@@ -42,10 +42,11 @@ All HTML, CSS, and JavaScript are contained in `index.html`. The application:
    - **Chart.js line chart**: Toggleable logarithmic/linear scale showing price progression
    - **Data table**: Metrics including Return Since Genesis, 5-Year CAGR, Return Since Purchase
 
-### Dependencies (CDN-loaded)
-- **Tailwind CSS v4**: Loaded via browser bundle (`@tailwindcss/browser@4`)
-- **Chart.js**: Latest version for price visualization
-- **Google Fonts**: IBM Plex Mono (monospace terminal font)
+### Dependencies (CDN-loaded, pinned with SRI)
+- **Tailwind CSS v4.1.18**: Loaded via browser bundle (`@tailwindcss/browser@4.1.18`) with integrity hash
+- **Chart.js v4.5.1**: Pinned version (`chart.js@4.5.1/dist/chart.umd.min.js`) with integrity hash
+- **Google Fonts**: IBM Plex Mono (weights 400, 700 only)
+- All CDN scripts include `crossorigin="anonymous"` and `integrity` attributes
 
 ### Page Structure
 ```
@@ -231,7 +232,7 @@ The application uses a retro BBS/ASCII terminal aesthetic throughout:
     --bg-card: #161b22;             /* Elevated elements */
     --text-primary: #00ff00;        /* Terminal green */
     --text-secondary: #33ff33;      /* Lighter green */
-    --text-dim: #6e7681;            /* Muted text */
+    --text-dim: #8b949e;            /* Muted text (WCAG AA 4.6:1) */
     --text-white: #e6e6e6;          /* White text */
     --text-amber: #ffb000;          /* Gold/amber accents */
     --text-cyan: #00ffff;           /* Cyan for headers */
@@ -307,11 +308,46 @@ When modifying this codebase:
    - Data loads in background on init
    - Skip rendering on initial load (performance)
 
+## Security
+
+The app includes production-grade security hardening:
+- **CSP**: `<meta http-equiv="Content-Security-Policy">` restricts script-src, style-src, font-src, connect-src, img-src
+- **SRI**: Both CDN scripts have `integrity` + `crossorigin="anonymous"` attributes
+- **API validation**: CoinGecko response checked for `response.ok`, shape (`data.bitcoin.usd`), type (`number`), and `isFinite()`
+- **CSV validation**: Date strings validated against `MM/DD/YYYY` regex; prices must be finite and non-negative
+- **Input constraints**: Date inputs have `min="2009-01-03"` and dynamically set `max` to today
+- **Fetch timeouts**: AbortController with 10s (API) and 5s (CSV) limits
+- **Error handling**: `init().catch()` displays visible error state; `alert()` replaced with inline terminal-styled messages
+
+## Accessibility
+
+WCAG 2.1 AA compliance:
+- **Landmarks**: `<main>`, `<header>`, `<footer>`, 3 labeled `<section>` elements
+- **Headings**: `<h1>` (mobile header) + 3 `<h2>` section headers
+- **Skip-nav**: Hidden link to `#tableSection` visible on focus
+- **ARIA**: `aria-live="polite"` on live price, `aria-pressed` on scale toggle, `aria-label` on chart canvas, `aria-hidden` on ASCII art, `<caption>` on table
+- **Contrast**: `--text-dim` at #8b949e (4.6:1 ratio on #0a0a0a)
+- **Reduced motion**: `@media (prefers-reduced-motion: reduce)` disables all animations
+- **High contrast**: `@media (prefers-contrast: more)` removes CRT scanline overlay
+- **Focus**: `focus-visible` styles (2px solid magenta) on all interactive elements
+
+## SEO
+
+- `<title>`: Keyword-optimized for search
+- `<meta name="description">`: Summary for search snippets
+- Open Graph + Twitter Card meta tags for social sharing
+- `<link rel="canonical">` to prevent duplicate indexing
+- `<meta name="theme-color">` for mobile browser chrome
+- Inline SVG favicon (Bitcoin symbol)
+- Schema.org JSON-LD (`WebApplication` type)
+- `robots.txt` and `sitemap.xml` in repo root
+
 ## GitHub Actions
 
 The repository includes Claude Code integration workflows in `.github/workflows/`:
 - `claude.yml` - Claude Code workflow for AI-assisted development
 - `claude-code-review.yml` - Automated code review workflow
+- `deploy-pages.yml` - GitHub Pages deployment
 
 ## Testing Checklist
 
@@ -327,7 +363,12 @@ When making changes, verify:
 - [ ] Responsive design works on mobile
 - [ ] Terminal theme consistent throughout
 - [ ] No console errors
-- [ ] CSV fallback data works if files unavailable
+- [ ] CSV fallback data works if files unavailable with [NOTICE] banner
+- [ ] Genesis date before 2009-01-03 is rejected by browser
+- [ ] API failure shows "Unable to fetch" gracefully
+- [ ] Skip-nav link visible on keyboard Tab press
+- [ ] prefers-reduced-motion disables animations
+- [ ] Scale toggle aria-pressed updates correctly
 
 ## Browser Compatibility
 
