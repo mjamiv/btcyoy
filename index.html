@@ -967,41 +967,91 @@
                 return;
             }
 
-            // Prepare data with My Genesis entry if applicable
-            let tableData = [...data];
-            let myGenesisInData = false;
+            // Prepare table data - potentially including My Genesis row
+            let tableData = data.map(item => ({...item, isMyGenesis: false}));
 
-            // Check if My Genesis date falls on today's month/day
             if (myGenesisData) {
-                const myGenesisOnToday = myGenesisData.month === todayMonth && myGenesisData.day === todayDay;
-                if (myGenesisOnToday) {
-                    // Check if My Genesis year is already in the data
-                    myGenesisInData = tableData.some(item => item.year === myGenesisData.year);
+                const existingIndex = tableData.findIndex(item => item.year === myGenesisData.year);
+                const existingOnSameDate = myGenesisData.month === todayMonth && myGenesisData.day === todayDay;
+
+                if (existingIndex === -1) {
+                    // Genesis year not in data - add as new row
+                    tableData.push({
+                        date: myGenesisData.date,
+                        year: myGenesisData.year,
+                        month: myGenesisData.month,
+                        day: myGenesisData.day,
+                        price: myGenesisData.price,
+                        isMyGenesis: true
+                    });
+                    tableData.sort((a, b) => a.year - b.year);
+                } else if (existingOnSameDate) {
+                    // Same date - mark existing row
+                    tableData[existingIndex].isMyGenesis = true;
+                } else {
+                    // Different date in same year - add separate row
+                    const dayOfYear = Math.floor((new Date(myGenesisData.year, myGenesisData.month - 1, myGenesisData.day) - new Date(myGenesisData.year, 0, 0)) / (1000 * 60 * 60 * 24));
+                    tableData.push({
+                        date: myGenesisData.date,
+                        year: myGenesisData.year,
+                        sortYear: myGenesisData.year + (dayOfYear / 366),
+                        month: myGenesisData.month,
+                        day: myGenesisData.day,
+                        price: myGenesisData.price,
+                        isMyGenesis: true
+                    });
+                    tableData.sort((a, b) => (a.sortYear || a.year) - (b.sortYear || b.year));
                 }
             }
+
+            // Determine the genesis sortYear for comparing which rows come after
+            const genesisSortYear = myGenesisData
+                ? (myGenesisData.year + (Math.floor((new Date(myGenesisData.year, myGenesisData.month - 1, myGenesisData.day) - new Date(myGenesisData.year, 0, 0)) / (1000 * 60 * 60 * 24)) / 366))
+                : null;
 
             tbody.innerHTML = tableData.map(item => {
                 const returnClass = item.returnSinceGenesis >= 0 ? 'positive' : 'negative';
                 const cagrClass = item.cagr5Year !== null && item.cagr5Year >= 0 ? 'positive' : 'negative';
-                const isCurrentYear = item.year === todayYear;
-                let rowClass = isCurrentYear ? 'current-row' : '';
+                const isCurrentYear = item.year === todayYear && !item.isMyGenesis;
+                const isMyGenesis = item.isMyGenesis === true;
+                let rowClass = isMyGenesis ? 'my-genesis-row' : (isCurrentYear ? 'current-row' : '');
                 const liveTag = isCurrentYear ? ' <span class="live-indicator">[LIVE]</span>' : '';
 
-                // Calculate My Genesis return
+                // Format date - use genesis date for My Genesis rows
+                let dateLabel;
+                if (isMyGenesis) {
+                    const mgMonth = item.month || myGenesisData.month;
+                    const mgDay = item.day || myGenesisData.day;
+                    dateLabel = `${monthNames[mgMonth - 1]} ${mgDay}, ${item.year} <span style="color: #ff00ff;">[MY GENESIS]</span>`;
+                } else {
+                    dateLabel = `${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}${liveTag}`;
+                }
+
+                // Calculate My Genesis return - only for rows AFTER the genesis date
                 let myGenesisReturnCell = '';
                 if (myGenesisData) {
-                    const myGenesisReturn = calculateMyGenesisReturn(item.price);
-                    const myGenesisClass = myGenesisReturn !== null && myGenesisReturn >= 0 ? 'positive' : 'negative';
-                    myGenesisReturnCell = `<td class="text-right ${myGenesisClass}">${myGenesisReturn !== null ? formatPercentTable(myGenesisReturn) : '---'}</td>`;
+                    const itemSortYear = item.sortYear || item.year;
+                    if (isMyGenesis) {
+                        // The genesis row itself shows '---'
+                        myGenesisReturnCell = `<td class="text-right" style="color: #ff00ff;">---</td>`;
+                    } else if (itemSortYear > genesisSortYear) {
+                        // Only show return for years after the genesis date
+                        const myGenesisReturn = calculateMyGenesisReturn(item.price);
+                        const myGenesisClass = myGenesisReturn !== null && myGenesisReturn >= 0 ? 'positive' : 'negative';
+                        myGenesisReturnCell = `<td class="text-right ${myGenesisClass}">${myGenesisReturn !== null ? formatPercentTable(myGenesisReturn) : '---'}</td>`;
+                    } else {
+                        // Before genesis - show empty
+                        myGenesisReturnCell = `<td class="text-right text-dim">---</td>`;
+                    }
                 }
 
                 return `
                     <tr class="${rowClass}">
-                        <td>${monthNames[todayMonth - 1]} ${todayDay}, ${item.year}${liveTag}</td>
+                        <td>${dateLabel}</td>
                         <td class="text-right text-amber">${formatCurrencyTable(item.price)}</td>
-                        <td class="text-right ${returnClass}">${formatPercentTable(item.returnSinceGenesis)}</td>
+                        <td class="text-right ${returnClass}">${item.returnSinceGenesis !== undefined ? formatPercentTable(item.returnSinceGenesis) : '---'}</td>
                         ${myGenesisReturnCell}
-                        <td class="text-right ${cagrClass}">${item.cagr5Year !== null ? formatPercentTable(item.cagr5Year) : '---'}</td>
+                        <td class="text-right ${cagrClass}">${item.cagr5Year !== null && item.cagr5Year !== undefined ? formatPercentTable(item.cagr5Year) : '---'}</td>
                     </tr>
                 `;
             }).reverse().join('');
