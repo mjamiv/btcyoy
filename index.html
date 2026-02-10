@@ -1016,7 +1016,8 @@
             }
 
             // Prepare chart data - potentially including My Genesis point
-            let chartData = [...data];
+            // Deep copy objects to prevent isMyGenesis mutation from leaking into todayData
+            let chartData = data.map(item => ({...item, isMyGenesis: false}));
 
             // Add My Genesis point if user has set a genesis date
             if (myGenesisData) {
@@ -1213,7 +1214,8 @@
             }
 
             // Prepare display data - potentially including My Genesis block
-            let displayData = [...data];
+            // Deep copy objects to prevent isMyGenesis mutation from leaking into todayData
+            let displayData = data.map(item => ({...item, isMyGenesis: false}));
 
             // Add My Genesis block if user has set a genesis date
             if (myGenesisData) {
