@@ -3,12 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitcoin Historical Price Tracker - BBS Terminal</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://api.coingecko.com 'self'; img-src 'self' data:; base-uri 'self'; form-action 'none';">
+    <title>Bitcoin Time Machine - BTC Price on This Day Every Year Since 2011</title>
+    <meta name="description" content="See what Bitcoin was worth on today's date every year since 2011. Explore historical BTC prices, year-over-year returns, 5-year CAGR, and interactive price charts.">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="canonical" href="https://mjamiv.github.io/btcyoy/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Bitcoin Time Machine - Historical Price Tracker">
+    <meta property="og:description" content="See what Bitcoin was worth on today's date every year since 2011.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mjamiv.github.io/btcyoy/">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Bitcoin Time Machine - Historical Price Tracker">
+    <meta name="twitter:description" content="See what Bitcoin was worth on today's date every year since 2011.">
+    <!-- Favicon (inline SVG) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>₿</text></svg>">
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Bitcoin Time Machine",
+        "description": "Historical Bitcoin price tracker showing BTC prices on this day each year since 2011",
+        "url": "https://mjamiv.github.io/btcyoy/",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.18"
+            integrity="sha384-WrpyCFNrMmN/IC7KmMNiXxIouXEFpoDIuJ2P+ys++uYEzegAW2MSl+X6Unsahaij"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+            integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ"
+            crossorigin="anonymous"></script>
     <style>
         /* ========================================
            BBS/ASCII TERMINAL THEME
@@ -21,7 +53,7 @@
             --bg-card: #0a0a0a;
             --text-primary: #00ff00;
             --text-secondary: #33ff33;
-            --text-dim: #6e7681;
+            --text-dim: #8b949e;
             --text-white: #e6e6e6;
             --text-amber: #ffb000;
             --text-cyan: #00ffff;
@@ -353,8 +385,9 @@
             }
 
             .scale-toggle button {
-                padding: 0.25rem 0.5rem;
+                padding: 0.5rem 0.75rem;
                 font-size: 0.625rem;
+                min-height: 44px;
             }
         }
 
@@ -626,6 +659,29 @@
             font-weight: bold;
         }
 
+        /* Reduced Motion & High Contrast */
+        @media (prefers-reduced-motion: reduce) {
+            .live-indicator { animation: none; opacity: 1; }
+            .aligned-block.current-year { animation: none; }
+            * { transition-duration: 0.01ms !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce), (prefers-contrast: more) {
+            body::before { display: none; }
+        }
+
+        /* Focus Styles */
+        .scale-toggle button:focus-visible,
+        .clear-btn:focus-visible {
+            outline: 2px solid #ff00ff;
+            outline-offset: 2px;
+        }
+
+        .my-genesis-input input[type="date"]:focus-visible {
+            outline: 2px solid #ff00ff;
+            outline-offset: 2px;
+        }
+
         /* Tailwind Overrides for Terminal Theme */
         .text-white { color: var(--text-white) !important; }
         .text-gray-400 { color: var(--text-dim) !important; }
@@ -654,6 +710,8 @@
     </style>
 </head>
 <body class="min-h-screen">
+    <noscript><div style="color:#00ff00;background:#0a0a0a;padding:2rem;text-align:center;font-family:monospace;">JavaScript is required to run Bitcoin Time Machine.</div></noscript>
+    <a href="#tableSection" class="sr-only" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.width='auto';this.style.height='auto';" onblur="this.style.position='absolute';this.style.left='-9999px';this.style.width='1px';this.style.height='1px';">Skip to data</a>
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <header class="terminal-header">
@@ -665,13 +723,13 @@
                 <div class="my-genesis-input" style="margin-top: 0.75rem;">
                     <label for="myGenesisDateMobile">Enter your Bitcoin genesis date</label>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="date" id="myGenesisDateMobile" onchange="handleMyGenesisChangeMobile()" />
+                        <input type="date" id="myGenesisDateMobile" min="2009-01-03" onchange="handleMyGenesisChangeMobile()" />
                         <button class="clear-btn" onclick="clearMyGenesis()" id="clearGenesisBtnMobile" style="display: none;">Clear</button>
                     </div>
                 </div>
             </div>
             <!-- ASCII Bitcoin Logo (hidden on mobile) -->
-            <pre class="ascii-logo">
+            <pre class="ascii-logo" aria-hidden="true">
 ┌────────────────────────────────────────────────────────────────────────┐
 │                                                                        │
 │     ██████╗ ██╗████████╗ ██████╗ ██████╗ ██╗███╗   ██╗                 │
@@ -706,21 +764,22 @@
             <div class="my-genesis-input">
                 <label for="myGenesisDate">Enter your Bitcoin genesis date</label>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="date" id="myGenesisDate" onchange="handleMyGenesisChange()" />
+                    <input type="date" id="myGenesisDate" min="2009-01-03" onchange="handleMyGenesisChange()" />
                     <button class="clear-btn" onclick="clearMyGenesis()" id="clearGenesisBtn" style="display: none;">Clear</button>
                 </div>
             </div>
         </header>
 
+        <main>
         <!-- Bitcoin Blockchain Blocks -->
-        <section class="terminal-card">
+        <section class="terminal-card" aria-label="Bitcoin Daychain Timeline">
             <div class="flex items-center justify-between mb-4 section-header-mobile">
-                <div class="section-header" style="margin-bottom: 0;">
-                    </span> BITCOIN DAYCHAIN - <span id="timelineDate" class="text-amber"></span>
-                </div>
+                <h2 class="section-header" style="margin-bottom: 0;">
+                    BITCOIN DAYCHAIN - <span id="timelineDate" class="text-amber"></span>
+                </h2>
                 <div class="text-right">
                     <p class="text-dim text-xs">TODAY</p>
-                    <div id="livePrice" class="text-2xl font-bold text-amber">Loading...</div>
+                    <div id="livePrice" class="text-2xl font-bold text-amber" aria-live="polite" role="status">Loading...</div>
                     <span class="live-indicator text-xs">[LIVE]</span>
                 </div>
             </div>
@@ -733,28 +792,29 @@
         </section>
 
         <!-- Chart Section -->
-        <section class="terminal-card">
+        <section class="terminal-card" aria-label="Price Chart">
             <div class="flex items-center justify-between mb-4 section-header-mobile">
-                <div class="section-header" style="margin-bottom: 0;">
-                    </span> PRICE ON THIS DAY EACH YEAR
-                </div>
-                <div class="scale-toggle">
-                    <button id="logScaleBtn" class="active" onclick="setChartScale('logarithmic')">LOG</button>
-                    <button id="linearScaleBtn" onclick="setChartScale('linear')">LINEAR</button>
+                <h2 class="section-header" style="margin-bottom: 0;">
+                    PRICE ON THIS DAY EACH YEAR
+                </h2>
+                <div class="scale-toggle" role="group" aria-label="Chart scale">
+                    <button id="logScaleBtn" class="active" aria-pressed="true" onclick="setChartScale('logarithmic')">LOG</button>
+                    <button id="linearScaleBtn" aria-pressed="false" onclick="setChartScale('linear')">LINEAR</button>
                 </div>
             </div>
             <div class="relative h-80 chart-container-mobile">
-                <canvas id="priceChart"></canvas>
+                <canvas id="priceChart" role="img" aria-label="Line chart showing Bitcoin price on this day across all years"></canvas>
             </div>
         </section>
 
         <!-- Data Table -->
-        <section id="tableSection" class="terminal-card">
-            <div class="section-header">
-                </span> HISTORICAL DATA FOR <span id="tableDateHeader" class="text-amber"></span>
-            </div>
+        <section id="tableSection" class="terminal-card" aria-label="Historical Data Table">
+            <h2 class="section-header">
+                HISTORICAL DATA FOR <span id="tableDateHeader" class="text-amber"></span>
+            </h2>
             <div class="overflow-x-auto">
                 <table class="terminal-table w-full">
+                    <caption class="sr-only" style="position:absolute;left:-9999px;">Bitcoin historical price data with year-over-year returns</caption>
                     <thead>
                         <tr>
                             <th class="text-left">DATE</th>
@@ -770,6 +830,8 @@
                 </table>
             </div>
         </section>
+
+        </main>
 
         <!-- Footer -->
         <footer class="terminal-footer">
@@ -872,11 +934,14 @@
                     let dateStr = parts[0].replace(/"/g, '').trim();
                     let priceStr = parts[1].replace(/"/g, '').trim();
 
+                    // Validate date format: MM/DD/YYYY
+                    if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) continue;
+
                     // Remove comma separators from price (e.g., "87,612.7" -> "87612.7")
                     priceStr = priceStr.replace(/,/g, '');
                     const price = parseFloat(priceStr);
 
-                    if (!isNaN(price) && dateStr) {
+                    if (!isNaN(price) && isFinite(price) && price >= 0 && dateStr) {
                         data[dateStr] = price;
                     }
                 }
@@ -916,14 +981,18 @@
             const genesisPrice = data[0].price;
             
             return data.map((item, index) => {
-                // Return since genesis
-                const returnSinceGenesis = ((item.price - genesisPrice) / genesisPrice) * 100;
-                
-                // 5-Year CAGR
+                // Return since genesis (guard division by zero)
+                const returnSinceGenesis = genesisPrice > 0
+                    ? ((item.price - genesisPrice) / genesisPrice) * 100
+                    : null;
+
+                // 5-Year CAGR (guard division by zero)
                 let cagr5Year = null;
                 if (index >= 5) {
                     const price5YearsAgo = data[index - 5].price;
-                    cagr5Year = (Math.pow(item.price / price5YearsAgo, 1/5) - 1) * 100;
+                    if (price5YearsAgo > 0) {
+                        cagr5Year = (Math.pow(item.price / price5YearsAgo, 1/5) - 1) * 100;
+                    }
                 }
                 
                 return {
@@ -1230,6 +1299,8 @@
             // Update button states
             document.getElementById('logScaleBtn').classList.toggle('active', scaleType === 'logarithmic');
             document.getElementById('linearScaleBtn').classList.toggle('active', scaleType === 'linear');
+            document.getElementById('logScaleBtn').setAttribute('aria-pressed', scaleType === 'logarithmic');
+            document.getElementById('linearScaleBtn').setAttribute('aria-pressed', scaleType === 'linear');
 
             // Re-render chart with new scale if data is available
             if (todayData && todayData.length > 0) {
@@ -1323,7 +1394,7 @@
                 let changePercent = null;
                 let changeClass = '';
 
-                if (prevYearItem) {
+                if (prevYearItem && prevYearItem.price > 0) {
                     changePercent = ((item.price - prevYearItem.price) / prevYearItem.price) * 100;
                     changeClass = changePercent >= 0 ? 'ansi-block-change-positive' : 'ansi-block-change-negative';
                 }
@@ -1412,8 +1483,17 @@ ${L10}</div>`;
         // Fetch current BTC price and add to todayData
         async function fetchCurrentPrice() {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const apiController = new AbortController();
+                const apiTimeout = setTimeout(() => apiController.abort(), 10000);
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { signal: apiController.signal });
+                clearTimeout(apiTimeout);
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
                 const data = await response.json();
+                if (!data || !data.bitcoin || typeof data.bitcoin.usd !== 'number' || !isFinite(data.bitcoin.usd)) {
+                    throw new Error('Invalid API response shape');
+                }
                 currentPrice = data.bitcoin.usd;
                 document.getElementById('livePrice').textContent = formatCurrency(currentPrice);
                 document.getElementById('priceSource').textContent = 'Live price from CoinGecko';
@@ -1423,6 +1503,7 @@ ${L10}</div>`;
 
                 return currentPrice;
             } catch (error) {
+                console.warn('CoinGecko API error:', error.message);
                 document.getElementById('livePrice').textContent = 'Unable to fetch';
                 document.getElementById('priceSource').textContent = 'API unavailable';
                 return null;
@@ -1488,10 +1569,16 @@ ${L10}</div>`;
 
             for (const filename of filenames) {
                 try {
-                    const response = await fetch(filename);
+                    const csvController = new AbortController();
+                    const csvTimeout = setTimeout(() => csvController.abort(), 5000);
+                    const response = await fetch(filename, { signal: csvController.signal });
+                    clearTimeout(csvTimeout);
                     if (response.ok) {
-                        csvText = await response.text();
-                        break;
+                        const text = await response.text();
+                        if (text.trim().startsWith('Date,Price') || text.trim().startsWith('"Date"')) {
+                            csvText = text;
+                            break;
+                        }
                     }
                 } catch (e) {
                     // Continue to next filename
@@ -1499,8 +1586,10 @@ ${L10}</div>`;
             }
 
             // Use sample data if file not available
+            let usingSampleData = false;
             if (!csvText) {
                 csvText = sampleHistoricalData;
+                usingSampleData = true;
             }
 
             historicalData = parseCSV(csvText);
@@ -1528,6 +1617,13 @@ ${L10}</div>`;
             renderTimelineCards(todayData);
             renderTable(todayData);
             renderChart(todayData);
+
+            if (usingSampleData) {
+                const banner = document.createElement('div');
+                banner.style.cssText = 'text-align: center; padding: 0.5rem; color: var(--text-amber); font-size: 0.75rem; border: 1px solid var(--text-amber); margin-bottom: 1rem;';
+                banner.textContent = '[NOTICE] Using sample data — historical CSV could not be loaded.';
+                document.querySelector('.container').prepend(banner);
+            }
         }
 
         // Handle My Genesis date change
@@ -1575,40 +1671,30 @@ ${L10}</div>`;
             // Look up price in historical data
             let price = historicalData[dateStr];
 
-            // If exact date not found, try to find closest available date
+            // If exact date not found, find closest available date
             if (!price) {
-                // Try to find any data for that year on the same month/day pattern
-                const pattern = `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}/`;
-                for (const [date, p] of Object.entries(historicalData)) {
-                    if (date.startsWith(pattern)) {
-                        // Found data for this day in another year
-                        break;
+                const inputDate = new Date(year, month - 1, day);
+                let closestDiff = Infinity;
+                const MAX_DAYS_DIFF = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+
+                for (const [dateKey, p] of Object.entries(historicalData)) {
+                    const dateParts = dateKey.split('/');
+                    const dataDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]));
+                    const diff = Math.abs(dataDate - inputDate);
+                    if (diff < closestDiff) {
+                        closestDiff = diff;
+                        price = p;
                     }
                 }
 
-                // If still no price, show a message but still create the genesis point
-                // Use interpolation or show as unavailable
-                if (!price) {
-                    // Find the closest date we have data for
-                    const inputDate = new Date(year, month - 1, day);
-                    let closestDate = null;
-                    let closestDiff = Infinity;
-
-                    for (const [dateKey, p] of Object.entries(historicalData)) {
-                        const dateParts = dateKey.split('/');
-                        const dataDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[0]) - 1, parseInt(dateParts[1]));
-                        const diff = Math.abs(dataDate - inputDate);
-                        if (diff < closestDiff) {
-                            closestDiff = diff;
-                            closestDate = dateKey;
-                            price = p;
-                        }
-                    }
+                // Reject if closest date is more than 7 days away
+                if (closestDiff > MAX_DAYS_DIFF) {
+                    price = null;
                 }
             }
 
             if (!price) {
-                alert('No price data available for this date or nearby dates.');
+                showGenesisError('No price data available for this date or nearby dates.');
                 clearMyGenesis();
                 return;
             }
@@ -1668,8 +1754,23 @@ ${L10}</div>`;
 
         // Calculate My Genesis return for a given price
         function calculateMyGenesisReturn(price) {
-            if (!myGenesisData || !myGenesisData.price) return null;
+            if (!myGenesisData || !myGenesisData.price || myGenesisData.price <= 0) return null;
             return ((price - myGenesisData.price) / myGenesisData.price) * 100;
+        }
+
+        // Show inline error message for genesis date (replaces alert())
+        function showGenesisError(msg) {
+            const labels = document.querySelectorAll('.my-genesis-input label');
+            labels.forEach(label => {
+                const existing = label.parentElement.querySelector('.genesis-error');
+                if (existing) existing.remove();
+                const err = document.createElement('div');
+                err.className = 'genesis-error';
+                err.style.cssText = 'color: var(--negative); font-size: 0.75rem; margin-top: 0.25rem;';
+                err.textContent = `[ERROR] ${msg}`;
+                label.parentElement.appendChild(err);
+                setTimeout(() => err.remove(), 5000);
+            });
         }
 
         // Initialize
@@ -1684,7 +1785,11 @@ ${L10}</div>`;
             await fetchCurrentPrice();
         }
 
-        init();
+        init().catch(err => {
+            console.error('Initialization failed:', err);
+            document.getElementById('priceTableBody').innerHTML =
+                '<tr><td colspan="4" class="text-center py-8 negative">[ ERROR: Failed to initialize. Please reload. ]</td></tr>';
+        });
     </script>
 </body>
 </html>

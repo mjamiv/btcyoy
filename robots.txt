@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mjamiv.github.io/btcyoy/sitemap.xml
