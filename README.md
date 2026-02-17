@@ -1,6 +1,6 @@
 # Bitcoin Time Machine (btcyoy)
 
-An interactive, single-page Bitcoin historical price tracker showing BTC's price on today's date for every year since 2011. Built with a retro BBS/ASCII terminal aesthetic.
+An interactive, zero-build Bitcoin historical price tracker showing BTC's price on today's date for every year since 2011. Built with a retro BBS/ASCII terminal aesthetic.
 
 **Live**: https://mjamiv.github.io/btcyoy/
 
@@ -11,23 +11,27 @@ An interactive, single-page Bitcoin historical price tracker showing BTC's price
 - **Historical Data Table** — Date, BTC/USD, Genesis Return, 5-Year CAGR per year
 - **My Genesis** — Pick your personal Bitcoin purchase date and see returns vs. every year
 - **Live Price** — Current BTC price from CoinGecko API, highlighted with `[LIVE]` tag
+- **One-Click Refresh** — Manual live-price refresh button + background auto-refresh
+- **Remembered Preferences** — Persists chart scale and My Genesis date in local storage
 - **Responsive** — Mobile-optimized with horizontal scroll blocks and adaptive font sizing
 
 ## Running the App
 
-No build step required. Open `index.html` in any modern browser:
+No build step required. Use any static file server:
 
 ```
-open index.html        # macOS
-# or just double-click the file
+python3 -m http.server 8000
+# then visit http://localhost:8000
 ```
 
-Dependencies load via CDN (Tailwind CSS 4.1.18, Chart.js 4.5.1, IBM Plex Mono font). Data is read from the local `btc-historical-price` CSV file.
+Dependencies load via CDN (Chart.js 4.5.1, IBM Plex Mono font). App CSS/JS are local files in `assets/`. Data is read from the local `btc-historical-price` CSV file.
 
 ## Project Structure
 
 ```
-index.html              # Single-file app (HTML + CSS + JS)
+index.html              # App shell and semantic layout
+assets/css/app.css      # BBS terminal theme + utility classes
+assets/js/app.js        # Runtime logic (data load, rendering, interactions)
 btc-historical-price    # Historical BTC price CSV (Date,Price)
 robots.txt              # Search engine directives
 sitemap.xml             # Sitemap for SEO
@@ -38,7 +42,9 @@ CLAUDE.md               # AI development instructions
 ## Security & Production Hardening
 
 - CDN dependencies pinned to exact versions with Subresource Integrity (SRI) hashes
-- Content Security Policy (CSP) meta tag restricting script/style/font/API origins
+- Strict Content Security Policy (CSP) without `unsafe-inline`
+- Additional hardening headers via meta: Referrer-Policy + Permissions-Policy
+- Removed inline event handlers/styles in favor of JS event listeners + CSS classes
 - CoinGecko API response validated for shape, type, and finite values
 - CSV parser validates date format (MM/DD/YYYY) and rejects invalid prices
 - Fetch requests use AbortController timeouts (10s API, 5s CSV)
