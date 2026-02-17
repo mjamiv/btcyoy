@@ -1,68 +1,96 @@
-# Bitcoin Time Machine (btcyoy)
+# Bitcoin Time Machine (`btcyoy`)
 
-An interactive, zero-build Bitcoin historical price tracker showing BTC's price on today's date for every year since 2011. Built with a retro BBS/ASCII terminal aesthetic.
+An interactive, zero-build Bitcoin historical price tracker with a retro BBS/ASCII terminal aesthetic.
+It shows BTC price on the current month/day across years, then overlays current live price data for this year.
 
-**Live**: https://mjamiv.github.io/btcyoy/
+Live site: https://mjamiv.github.io/btcyoy/
 
-## Features
+## Highlights
 
-- **ANSI Blockchain Blocks** — ASCII art timeline showing price on this day each year, newest first
-- **Interactive Chart** — Chart.js line graph with logarithmic/linear scale toggle
-- **Historical Data Table** — Date, BTC/USD, Genesis Return, 5-Year CAGR per year
-- **My Genesis** — Pick your personal Bitcoin purchase date and see returns vs. every year
-- **Live Price** — Current BTC price from CoinGecko API, highlighted with `[LIVE]` tag
-- **One-Click Refresh** — Manual live-price refresh button + background auto-refresh
-- **Remembered Preferences** — Persists chart scale and My Genesis date in local storage
-- **Responsive** — Mobile-optimized with horizontal scroll blocks and adaptive font sizing
+- ANSI-style timeline blocks (newest year first)
+- Chart.js line chart with logarithmic/linear scale toggle
+- Historical table with:
+  - BTC/USD
+  - Return since first available year in the current series
+  - 5-year CAGR
+  - Optional "My Genesis Return" column
+- Personal "My Genesis" date analysis (with nearest-date fallback up to 7 days)
+- Live BTC price from CoinGecko with:
+  - `[LIVE]` indicator
+  - Manual refresh button
+  - Background auto-refresh
+  - Last-updated timestamp
+- Preference persistence in `localStorage` (chart scale + My Genesis date)
 
-## Running the App
+## Quick Start
 
-No build step required. Use any static file server:
+No build step required. Serve as static files:
 
-```
+```bash
 python3 -m http.server 8000
-# then visit http://localhost:8000
 ```
 
-Dependencies load via CDN (Chart.js 4.5.1, IBM Plex Mono font). App CSS/JS are local files in `assets/`. Data is read from the local `btc-historical-price` CSV file.
+Then open:
 
-## Project Structure
-
-```
-index.html              # App shell and semantic layout
-assets/css/app.css      # BBS terminal theme + utility classes
-assets/js/app.js        # Runtime logic (data load, rendering, interactions)
-btc-historical-price    # Historical BTC price CSV (Date,Price)
-robots.txt              # Search engine directives
-sitemap.xml             # Sitemap for SEO
-CLAUDE.md               # AI development instructions
-.github/workflows/      # GitHub Actions (deploy, Claude Code, code review)
+```text
+http://localhost:8000
 ```
 
-## Security & Production Hardening
+## Stack
 
-- CDN dependencies pinned to exact versions with Subresource Integrity (SRI) hashes
-- Strict Content Security Policy (CSP) without `unsafe-inline`
-- Additional hardening headers via meta: Referrer-Policy + Permissions-Policy
-- Removed inline event handlers/styles in favor of JS event listeners + CSS classes
-- CoinGecko API response validated for shape, type, and finite values
-- CSV parser validates date format (MM/DD/YYYY) and rejects invalid prices
-- Fetch requests use AbortController timeouts (10s API, 5s CSV)
-- All division operations guarded against zero denominators
-- Graceful fallback to sample data with visible `[NOTICE]` banner
+- HTML shell: `index.html`
+- App styles: `assets/css/app.css`
+- App runtime: `assets/js/app.js`
+- Historical dataset: `btc-historical-price` (`Date,Price`)
+- External dependencies:
+  - Chart.js `4.5.1` (CDN + SRI)
+  - IBM Plex Mono (Google Fonts)
+
+## Data Flow
+
+1. Load CSV data (tries multiple filenames, falls back to embedded sample data).
+2. Parse and validate rows (`MM/DD/YYYY`, finite non-negative prices).
+3. Filter rows to today's month/day across all years.
+4. Compute metrics (genesis return and 5-year CAGR).
+5. Render timeline, chart, and table.
+6. Fetch live price and inject/update current year.
+
+## Security
+
+- Strict CSP in `index.html`:
+  - No `unsafe-inline`
+  - Script allowlist includes self, Chart.js CDN, and a hash for JSON-LD block
+- Additional response-hardening meta policies:
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- No inline event handlers; all interaction is attached through JS listeners
+- API and CSV payload validation
+- Request timeouts via `AbortController`
 
 ## Accessibility
 
-- WCAG 2.1 AA color contrast compliance (`--text-dim` at 4.6:1 ratio)
-- Skip-nav link, `<main>` landmark, semantic `<h2>` headings, `aria-label` on sections
-- `aria-live="polite"` for live price updates, `aria-pressed` on scale toggle
-- `prefers-reduced-motion` support (disables all animations)
-- `prefers-contrast: more` support (removes CRT scanline overlay)
-- `focus-visible` styles on all interactive elements
+- Semantic landmarks (`<main>`, `<header>`, `<footer>`)
+- Skip link to data section
+- `aria-live` updates for live-price/status regions
+- `aria-pressed` on scale toggle buttons
+- `focus-visible` keyboard styles
+- `prefers-reduced-motion` and `prefers-contrast` support
 
-## SEO
+## Performance
 
-- Meta description, Open Graph, and Twitter Card tags
-- Schema.org JSON-LD structured data (WebApplication)
-- Canonical URL, theme-color, inline SVG favicon
-- Semantic HTML with proper heading hierarchy
+- Zero build and minimal runtime dependencies
+- Removed browser Tailwind runtime dependency
+- Chart updates in-place instead of destroy/recreate on each change
+- Auto-refresh runs only when tab is visible
+
+## Repository Layout
+
+```text
+index.html               # App shell, metadata, CSP, semantic structure
+assets/css/app.css       # Theme + responsive styles + utility classes
+assets/js/app.js         # Data loading, rendering, events, persistence
+btc-historical-price     # Historical BTC CSV (Date,Price)
+robots.txt               # Search engine directives
+sitemap.xml              # Sitemap for SEO
+.github/workflows/       # Deploy + automation workflows
+```
